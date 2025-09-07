@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인공지능 챗봇 - mobi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* 스크롤바 스타일링 */
+        #chat-container::-webkit-scrollbar, #chat-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        #chat-container::-webkit-scrollbar-track, #chat-list-container::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        #chat-container::-webkit-scrollbar-thumb, #chat-list-container::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 20px;
+        }
+        .chat-bubble {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: popIn 0.3s forwards;
+        }
+        @keyframes popIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* 툴팁 스타일 */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* 활성 채팅 스타일 */
+        .active-chat {
+            background-color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen p-4">
+
+    <div class="w-full h-full max-w-5xl flex bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        <!-- 사이드바: 채팅 목록 -->
+        <aside class="w-1/4 bg-gray-800 border-r border-gray-700 flex flex-col">
+            <div class="p-4 border-b border-gray-700">
+                <button id="new-chat-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                    + 새 대화 시작
+                </button>
+            </div>
+            <div id="chat-list-container" class="flex-1 overflow-y-auto">
+                <ul id="chat-list" class="p-2 space-y-1">
+                    <!-- 채팅 목록이 여기에 동적으로 추가됩니다 -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- 메인 채팅 창 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 헤더 -->
+            <header class="bg-gray-700 p-4 flex justify-between items-center border-b border-gray-600">
+                <h1 id="chat-title" class="text-xl font-bold text-center flex-1">mobi</h1>
+                <button id="clear-chat" class="text-gray-400 hover:text-white transition-colors duration-200 tooltip">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                    <span class="tooltiptext">대화 기록 삭제</span>
+                </button>
+            </header>
+
+            <!-- 채팅 메시지 컨테이너 -->
+            <main id="chat-container" class="flex-1 p-6 space-y-4 overflow-y-auto">
+                <!-- 채팅 메시지가 여기에 동적으로 추가됩니다 -->
+            </main>
+            
+            <!-- 입력 폼 -->
+            <footer class="p-4 bg-gray-800 border-t border-gray-700">
+                <div id="image-preview-container" class="mb-2"></div>
+                <form id="chat-form" class="flex items-center gap-2">
+                    <input type="file" id="file-input" accept="image/*" class="hidden">
+                    <button type="button" id="attach-file-button" class="text-gray-400 hover:text-white transition-colors duration-200 p-2 tooltip">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/><span class="tooltiptext">파일/이미지 첨부</span></svg>
+                    </button>
+                    <button type="button" id="canvas-button" class="text-gray-400 hover:text-white transition-colors duration-200 p-2 tooltip">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                        <span class="tooltiptext">Canvas</span>
+                    </button>
+                     <button type="button" id="guided-learning-button" class="text-gray-400 hover:text-white transition-colors duration-200 p-2 tooltip">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <span class="tooltiptext">가이드 학습</span>
+                    </button>
+                    <input type="text" id="user-input" placeholder="mobi에게 메시지 보내기..." class="flex-1 p-3 bg-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition duration-300" autocomplete="off">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </form>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // DOM 요소 가져오기
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatContainer = document.getElementById('chat-container');
+        const chatList = document.getElementById('chat-list');
+        const newChatButton = document.getElementById('new-chat-button');
+        const submitButton = chatForm.querySelector('button[type="submit"]');
+        const clearChatButton = document.getElementById('clear-chat');
+        const attachFileButton = document.getElementById('attach-file-button');
+        const fileInput = document.getElementById('file-input');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const chatTitle = document.getElementById('chat-title');
+        const canvasButton = document.getElementById('canvas-button');
+        const guidedLearningButton = document.getElementById('guided-learning-button');
+
+        // 상태 변수
+        let chats = {};
+        let activeChatId = null;
+        let attachedImageBase64 = null;
+
+        // 시스템 프롬프트 설정
+        const systemPrompt = "You are a friendly and helpful AI assistant. Your name is mobi. Please respond in Korean for first, but answer in language that user used..";
+        
+        // --- 채팅 관리 함수 ---
+
+        // 새 채팅 생성
+        function createNewChat() {
+            const newId = 'chat-' + Date.now();
+            chats[newId] = {
+                history: [],
+                name: "새 대화"
+            };
+            setActiveChat(newId);
+            renderChatList();
+        }
+
+        // 특정 채팅을 활성화
+        function setActiveChat(chatId) {
+            activeChatId = chatId;
+            displayActiveChat();
+            renderChatList();
+            userInput.focus();
+        }
+
+        // 채팅 목록 UI 렌더링
+        function renderChatList() {
+            chatList.innerHTML = '';
+            Object.keys(chats).forEach(chatId => {
+                const chat = chats[chatId];
+                const li = document.createElement('li');
+                li.className = `p-2 rounded-lg cursor-pointer hover:bg-gray-600 truncate ${chatId === activeChatId ? 'active-chat' : ''}`;
+                li.textContent = chat.name;
+                li.dataset.chatId = chatId;
+                li.addEventListener('click', () => setActiveChat(chatId));
+                chatList.prepend(li); // 새 채팅이 위로 오도록 prepend 사용
+            });
+        }
+        
+        // 활성화된 채팅의 메시지 표시
+        function displayActiveChat() {
+            chatContainer.innerHTML = '';
+            if (!activeChatId || !chats[activeChatId]) return;
+
+            const { history, name } = chats[activeChatId];
+            chatTitle.textContent = name;
+
+            if (history.length === 0) {
+                showInitialMessage();
+            } else {
+                history.forEach(message => {
+                    if (message.role === 'user') {
+                        const userPart = message.parts.find(p => p.text);
+                        const imagePart = message.parts.find(p => p.inlineData);
+                        const text = userPart ? userPart.text : '';
+                        let imageBase64 = null;
+                        if(imagePart) {
+                            imageBase64 = `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`;
+                        }
+                        addMessageToChat(text, 'user', imageBase64, false);
+                    } else if (message.role === 'model') {
+                        addMessageToChat(message.parts[0].text, 'ai', null, false);
+                    }
+                });
+            }
+        }
+
+        // --- 이벤트 리스너 ---
+
+        document.addEventListener('DOMContentLoaded', createNewChat);
+        newChatButton.addEventListener('click', createNewChat);
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!activeChatId) return;
+
+            const userMessage = userInput.value.trim();
+            if (!userMessage && !attachedImageBase64) return;
+            
+            // 대화 기록에 추가할 사용자 메시지 구성
+            const userParts = [];
+            if (userMessage) userParts.push({ text: userMessage });
+            if (attachedImageBase64) {
+                const [mimeType, base64Data] = attachedImageBase64.split(';base64,');
+                userParts.push({ inlineData: { mimeType: mimeType.split(':')[1], data: base64Data } });
+            }
+
+            // UI 업데이트
+            addMessageToChat(userMessage, 'user', attachedImageBase64);
+            userInput.value = '';
+            clearImagePreview();
+            submitButton.disabled = true;
+
+            // 현재 채팅의 기록에 추가
+            chats[activeChatId].history.push({ role: "user", parts: userParts });
+
+            // 첫 메시지인 경우 채팅 이름 업데이트
+            if (chats[activeChatId].history.length === 1 && userMessage) {
+                chats[activeChatId].name = userMessage.substring(0, 20);
+                renderChatList();
+                chatTitle.textContent = chats[activeChatId].name;
+            }
+
+            showTypingIndicator();
+
+            try {
+                const aiResponse = await getAiResponseWithRetry(chats[activeChatId].history);
+                chats[activeChatId].history.push({ role: "model", parts: [{ text: aiResponse }] });
+                removeTypingIndicator();
+                addMessageToChat(aiResponse, 'ai');
+            } catch (error) {
+                removeTypingIndicator();
+                addMessageToChat('죄송합니다, 오류가 발생했어요. 다시 시도해 주세요.', 'ai');
+                console.error('Error:', error);
+            } finally {
+                submitButton.disabled = false;
+                userInput.focus();
+            }
+        });
+
+        clearChatButton.addEventListener('click', () => {
+            if (activeChatId) {
+                chats[activeChatId].history = [];
+                chats[activeChatId].name = "새 대화";
+                displayActiveChat();
+                renderChatList();
+            }
+        });
+
+        attachFileButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    attachedImageBase64 = e.target.result;
+                    showImagePreview(attachedImageBase64);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        canvasButton.addEventListener('click', () => {
+            addMessageToChat('Canvas 기능은 현재 준비 중입니다.', 'ai');
+        });
+
+        guidedLearningButton.addEventListener('click', () => {
+            addMessageToChat('가이드 학습 기능은 현재 준비 중입니다.', 'ai');
+        });
+
+        // --- UI 헬퍼 함수 ---
+
+        function showInitialMessage() {
+            chatContainer.innerHTML = `
+            <div class="flex items-start gap-3 justify-start chat-bubble">
+                <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                </div>
+                <div class="bg-gray-700 rounded-lg p-3 max-w-[80%]">
+                    <p class="text-sm">안녕하세요! 저는 mobi입니다. 무엇이든 물어보세요.</p>
+                </div>
+            </div>`;
+        }
+
+        function showImagePreview(base64) {
+            imagePreviewContainer.innerHTML = `
+                <div class="relative inline-block bg-gray-700 p-1 rounded-lg">
+                    <img src="${base64}" alt="Preview" class="h-20 w-auto rounded">
+                    <button onclick="clearImagePreview()" class="absolute top-0 right-0 -mt-2 -mr-2 bg-gray-900 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">&times;</button>
+                </div>
+            `;
+        }
+
+        function clearImagePreview() {
+            attachedImageBase64 = null;
+            fileInput.value = '';
+            imagePreviewContainer.innerHTML = '';
+        }
+        
+        function addMessageToChat(message, sender, imageBase64 = null, shouldAnimate = true) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex items-start gap-3 ${shouldAnimate ? 'chat-bubble' : ''}`;
+
+            const imageHtml = imageBase64 ? `<img src="${imageBase64}" class="rounded-lg mt-2 max-w-xs h-auto">` : '';
+
+            if (sender === 'user') {
+                messageDiv.classList.add('justify-end');
+                messageDiv.innerHTML = `
+                    <div class="bg-indigo-600 rounded-lg p-3 max-w-[80%]">
+                        <p class="text-sm break-words">${message}</p>
+                        ${imageHtml}
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                `;
+            } else {
+                messageDiv.classList.add('justify-start');
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                       <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-3 max-w-[80%]">
+                        <p class="text-sm break-words">${message}</p>
+                    </div>
+                `;
+            }
+            if (!shouldAnimate) {
+                messageDiv.style.opacity = 1;
+                messageDiv.style.transform = 'translateY(0)';
+            }
+            chatContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'flex items-start gap-3 justify-start chat-bubble';
+            typingDiv.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                </div>
+                <div class="bg-gray-700 rounded-lg p-3 max-w-[80%] flex items-center space-x-1">
+                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0s;"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></span>
+                    <span class="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></span>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) typingIndicator.remove();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- API 호출 함수 ---
+
+        async function getAiResponseWithRetry(history, maxRetries = 3) {
+            let attempt = 0;
+            let delay = 1000;
+
+            while (attempt < maxRetries) {
+                try {
+                    return await callGeminiAPI(history);
+                } catch (error) {
+                    attempt++;
+                    if (attempt >= maxRetries) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function callGeminiAPI(history) {
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: history,
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`API 요청 실패: ${response.status} ${response.statusText} - ${errorBody}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                return data.candidates[0].content.parts[0].text;
+            } else {
+                return "죄송합니다, 답변을 생성할 수 없습니다.";
+            }
+        }
+
+    </script>
+</body>
+</html>
+
