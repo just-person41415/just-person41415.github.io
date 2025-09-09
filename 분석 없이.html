@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>코드 뽑기 게임</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8681578396964496"
+     crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.2) rotate(180deg); opacity: 0.8; }
+        }
+        @keyframes winner {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+        @keyframes coin-fade-up {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-50px); }
+        }
+        .sparkle { animation: sparkle 0.6s ease-in-out; }
+        .winner { animation: winner 0.5s ease-in-out 3; }
+        .pendant-message { animation: fadeInOut 3s ease-in-out forwards; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .golden-btn {
+            background: linear-gradient(45deg, #fce6a8, #f5c242);
+            box-shadow: 0 4px 15px rgba(245, 194, 66, 0.5);
+        }
+        .rainbow-btn {
+            background: linear-gradient(120deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888, #9c27b0, #734bde, #42a5f5, #26c6da, #26a69a, #4caf50);
+            background-size: 200% 200%;
+            animation: rainbow-animation 2s ease infinite;
+        }
+        @keyframes rainbow-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .rainbow-text {
+            background: linear-gradient(120deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888, #9c27b0, #734bde, #42a5f5, #26c6da, #26a69a, #4caf50);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: rainbow-animation 2s ease infinite;
+        }
+        .info-tooltip-container {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: inline-block;
+        }
+        .info-tooltip-icon {
+            cursor: pointer;
+            color: #9ca3af;
+        }
+        .info-tooltip-content {
+            visibility: hidden;
+            width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .info-tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        .info-tooltip-container:hover .info-tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        .coin-popup {
+            position: absolute;
+            font-weight: bold;
+            font-size: 1.25rem;
+            color: #ffb700;
+            animation: coin-fade-up 1s forwards;
+            pointer-events: none;
+            left: 50%;
+            transform: translateX(-50%);
+            top: -20px;
+        }
+        .accordion-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+        }
+        .accordion-content.expanded {
+            max-height: 500px; /* 충분히 큰 값으로 설정 */
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex flex-col items-center justify-start p-4 overflow-y-auto">
+    <!-- Main game container -->
+    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full relative pt-16 mb-4">
+        <!-- Playtime -->
+        <div class="absolute top-4 right-4 bg-gray-100 rounded-full px-4 py-2 text-center text-xs shadow-md">
+            <p class="text-gray-600 mb-0.5">⏱️ 플레이타임</p>
+            <p class="font-bold text-gray-800" id="playTime">0분 0초</p>
+        </div>
+
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                🎰 오늘의 코드 뽑기
+            </h1>
+            <div class="bg-yellow-100 rounded-lg p-3" id="codeDisplay">
+                <p class="text-sm text-gray-600 mb-1">🎯 획득한 코드</p>
+                <p class="text-2xl font-mono font-bold text-green-700" id="currentProgress">?????</p>
+                <p class="text-xs text-gray-500 mt-1">당첨으로 한 자리씩 공개해보세요!</p>
+            </div>
+        </div>
+
+        <!-- Stats display -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 relative">
+            <div id="coinsPopupContainer" class="absolute top-0 left-1/2 -translate-x-1/2"></div>
+            <div class="bg-blue-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-blue-600 mb-1">확률</p>
+                <p class="text-lg font-bold text-blue-800" id="currentChance">0.01%</p>
+            </div>
+            <div class="bg-purple-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-purple-600 mb-1">뽑은 횟수</p>
+                <p class="text-lg font-bold text-purple-800" id="drawCount">0</p>
+            </div>
+            <div class="bg-green-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-green-600 mb-1">쿨타임</p>
+                <p class="text-lg font-bold text-green-800" id="cooldownTime">3.00초</p>
+            </div>
+            <div class="bg-yellow-50 rounded-lg p-3 text-center">
+                <p class="text-xs text-yellow-600 mb-1">코인</p>
+                <p class="text-lg font-bold text-yellow-800" id="totalCoins">0</p>
+            </div>
+        </div>
+        
+        <!-- Draw button -->
+        <div class="text-center relative">
+            <button id="drawButton" class="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                🎲 뽑기!
+            </button>
+            <p class="text-sm text-gray-500 mt-2" id="buttonStatus"></p>
+        </div>
+    </div>
+
+    <!-- Result display -->
+    <div id="resultArea" class="text-center min-h-[100px] flex items-center justify-center p-4">
+    </div>
+
+    <!-- Auto machine section -->
+    <div id="autoMachinesContainer" class="mt-4 space-y-4 max-w-md w-full">
+        <!-- Auto Machine 1 -->
+        <div id="autoMachine1Wrapper" class="hidden p-4 rounded-xl border-2 border-orange-200 bg-orange-50">
+            <div class="accordion-header flex justify-between items-center w-full px-2 py-1">
+                <div class="flex items-center">
+                    <span class="text-xl mr-2">🤖</span>
+                    <h3 class="text-xl font-bold text-orange-800">자동 뽑기 기계 1</h3>
+                    <div class="info-tooltip-container relative ml-2">
+                        <span class="info-tooltip-icon">ⓘ</span>
+                        <div class="info-tooltip-content">
+                            <h4 class="font-bold">기계 1 정보</h4>
+                            <p>잠금 해제 조건: 뽑은 횟수 10회 이상</p>
+                            <p>특수 기능: 일반 뽑기의 코인 획득량 증가</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="toggleAuto1" class="text-sm px-4 py-1 rounded-full bg-orange-200 text-orange-800">간단히 보기</button>
+            </div>
+            <div id="accordionContent1" class="accordion-content">
+                <div class="p-3">
+                    <div class="bg-orange-100 rounded-lg p-3 mb-2">
+                        <p class="text-xs text-orange-600 mb-2">상태: <span id="autoStatus1">대기중...</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-orange-500 h-2 rounded-full transition-all duration-100" id="autoProgress1" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 mb-2">
+                        <p class="text-xs text-orange-600 mb-2">레벨: <span id="autoLevel1">1</span> | 뽑은 횟수: <span id="autoDrawCount1">0</span></p>
+                        <p class="text-xs text-orange-600 mb-2">확률: <span id="autoChance1">0.010%</span></p>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button id="levelUpAuto1" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (10 코인)</button>
+                        <button id="unlockGolden1" class="hidden golden-btn text-yellow-900 text-xs py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors disabled:opacity-50">황금 뽑기 잠금 해제 (500 코인)</button>
+                        <button id="unlockRainbow1" class="hidden rainbow-btn text-white text-xs py-2 px-4 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50">무지개 뽑기 잠금 해제 (2000 코인)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto Machine 2 -->
+        <div id="autoMachine2Wrapper" class="hidden p-4 rounded-xl border-2 border-green-200 bg-green-50">
+            <div class="accordion-header flex justify-between items-center w-full px-2 py-1">
+                <div class="flex items-center">
+                    <span class="text-xl mr-2">🤖</span>
+                    <h3 class="text-xl font-bold text-teal-800">자동 뽑기 기계 2</h3>
+                    <div class="info-tooltip-container relative ml-2">
+                        <span class="info-tooltip-icon">ⓘ</span>
+                        <div class="info-tooltip-content">
+                            <h4 class="font-bold">기계 2 정보</h4>
+                            <p>잠금 해제 조건: 기계 1 레벨 3 이상, 기계 1 뽑은 횟수 20회 이상</p>
+                            <p>특수 기능: 일반 뽑기의 코인 획득량 증가</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="toggleAuto2" class="text-sm px-4 py-1 rounded-full bg-green-200 text-green-800">간단히 보기</button>
+            </div>
+            <div id="accordionContent2" class="accordion-content">
+                <div class="p-3">
+                    <div class="bg-green-100 rounded-lg p-3 mb-2">
+                        <p class="text-xs text-green-600 mb-2">상태: <span id="autoStatus2">대기중...</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-teal-500 h-2 rounded-full transition-all duration-100" id="autoProgress2" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 mb-2">
+                        <p class="text-xs text-green-600 mb-2">레벨: <span id="autoLevel2">1</span> | 뽑은 횟수: <span id="autoDrawCount2">0</span></p>
+                        <p class="text-xs text-green-600 mb-2">확률: <span id="autoChance2">0.010%</span></p>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button id="levelUpAuto2" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (20 코인)</button>
+                        <button id="unlockGolden2" class="hidden golden-btn text-yellow-900 text-xs py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors disabled:opacity-50">황금 뽑기 잠금 해제 (500 코인)</button>
+                        <button id="unlockRainbow2" class="hidden rainbow-btn text-white text-xs py-2 px-4 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50">무지개 뽑기 잠금 해제 (2000 코인)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto Machine 3 -->
+        <div id="autoMachine3Wrapper" class="hidden p-4 rounded-xl border-2 border-sky-200 bg-sky-50">
+            <div class="accordion-header flex justify-between items-center w-full px-2 py-1">
+                <div class="flex items-center">
+                    <span class="text-xl mr-2">🤖</span>
+                    <h3 class="text-xl font-bold text-sky-800">자동 뽑기 기계 3</h3>
+                    <div class="info-tooltip-container relative ml-2">
+                        <span class="info-tooltip-icon">ⓘ</span>
+                        <div class="info-tooltip-content">
+                            <h4 class="font-bold">기계 3 정보</h4>
+                            <p>잠금 해제 조건: 기계 1, 2 레벨 4 이상, 기계 2 뽑은 횟수 30회 이상</p>
+                            <p>특수 기능: 일반 뽑기의 코인 획득량 증가</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="toggleAuto3" class="text-sm px-4 py-1 rounded-full bg-sky-200 text-sky-800">간단히 보기</button>
+            </div>
+            <div id="accordionContent3" class="accordion-content">
+                <div class="p-3">
+                    <div class="bg-sky-100 rounded-lg p-3 mb-2">
+                        <p class="text-xs text-sky-600 mb-2">상태: <span id="autoStatus3">대기중...</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-sky-500 h-2 rounded-full transition-all duration-100" id="autoProgress3" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 mb-2">
+                        <p class="text-xs text-sky-600 mb-2">레벨: <span id="autoLevel3">1</span> | 뽑은 횟수: <span id="autoDrawCount3">0</span></p>
+                        <p class="text-xs text-sky-600 mb-2">확률: <span id="autoChance3">0.010%</span></p>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button id="levelUpAuto3" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (50 코인)</button>
+                        <button id="unlockGolden3" class="hidden golden-btn text-yellow-900 text-xs py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors disabled:opacity-50">황금 뽑기 잠금 해제 (500 코인)</button>
+                        <button id="unlockRainbow3" class="hidden rainbow-btn text-white text-xs py-2 px-4 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50">무지개 뽑기 잠금 해제 (2000 코인)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto Machine 4 -->
+        <div id="autoMachine4Wrapper" class="hidden p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50">
+            <div class="accordion-header flex justify-between items-center w-full px-2 py-1">
+                <div class="flex items-center">
+                    <span class="text-xl mr-2">🤖</span>
+                    <h3 class="text-xl font-bold text-indigo-800">자동 뽑기 기계 4</h3>
+                    <div class="info-tooltip-container relative ml-2">
+                        <span class="info-tooltip-icon">ⓘ</span>
+                        <div class="info-tooltip-content">
+                            <h4 class="font-bold">기계 4 정보</h4>
+                            <p>잠금 해제 조건: 기계 1, 2, 3 레벨 5 이상, 기계 3 뽑은 횟수 50회 이상</p>
+                            <p>특수 기능: 다른 기계의 1.5배 확률 증가</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="toggleAuto4" class="text-sm px-4 py-1 rounded-full bg-indigo-200 text-indigo-800">간단히 보기</button>
+            </div>
+            <div id="accordionContent4" class="accordion-content">
+                <div class="p-3">
+                    <div class="bg-indigo-100 rounded-lg p-3 mb-2">
+                        <p class="text-xs text-indigo-600 mb-2">상태: <span id="autoStatus4">대기중...</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-500 h-2 rounded-full transition-all duration-100" id="autoProgress4" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 mb-2">
+                        <p class="text-xs text-indigo-600 mb-2">레벨: <span id="autoLevel4">1</span> | 뽑은 횟수: <span id="autoDrawCount4">0</span></p>
+                        <p class="text-xs text-indigo-600 mb-2">확률: <span id="autoChance4">0.010%</span></p>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button id="levelUpAuto4" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (100 코인)</button>
+                        <button id="unlockGolden4" class="hidden golden-btn text-yellow-900 text-xs py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors disabled:opacity-50">황금 뽑기 잠금 해제 (500 코인)</button>
+                        <button id="unlockRainbow4" class="hidden rainbow-btn text-white text-xs py-2 px-4 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50">무지개 뽑기 잠금 해제 (2000 코인)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Auto Machine 5 -->
+        <div id="autoMachine5Wrapper" class="hidden p-4 rounded-xl border-2 border-purple-200 bg-purple-50">
+            <div class="accordion-header flex justify-between items-center w-full px-2 py-1">
+                <div class="flex items-center">
+                    <span class="text-xl mr-2">🤖</span>
+                    <h3 class="text-xl font-bold text-purple-800">자동 뽑기 기계 5</h3>
+                    <div class="info-tooltip-container relative ml-2">
+                        <span class="info-tooltip-icon">ⓘ</span>
+                        <div class="info-tooltip-content">
+                            <h4 class="font-bold">기계 5 정보</h4>
+                            <p>잠금 해제 조건: 모든 기계 레벨 6 이상, 기계 4 뽑은 횟수 80회 이상</p>
+                            <p>특수 기능: 다른 기계의 2배 확률 증가</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="toggleAuto5" class="text-sm px-4 py-1 rounded-full bg-purple-200 text-purple-800">간단히 보기</button>
+            </div>
+            <div id="accordionContent5" class="accordion-content">
+                <div class="p-3">
+                    <div class="bg-purple-100 rounded-lg p-3 mb-2">
+                        <p class="text-xs text-purple-600 mb-2">상태: <span id="autoStatus5">대기중...</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full transition-all duration-100" id="autoProgress5" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 mb-2">
+                        <p class="text-xs text-purple-600 mb-2">레벨: <span id="autoLevel5">1</span> | 뽑은 횟수: <span id="autoDrawCount5">0</span></p>
+                        <p class="text-xs text-purple-600 mb-2">확률: <span id="autoChance5">0.010%</span></p>
+                    </div>
+                    <div class="flex justify-center flex-wrap gap-2">
+                        <button id="levelUpAuto5" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (200 코인)</button>
+                        <button id="unlockGolden5" class="hidden golden-btn text-yellow-900 text-xs py-2 px-4 rounded-full hover:bg-yellow-600 transition-colors disabled:opacity-50">황금 뽑기 잠금 해제 (500 코인)</button>
+                        <button id="unlockRainbow5" class="hidden rainbow-btn text-white text-xs py-2 px-4 rounded-full hover:bg-purple-600 transition-colors disabled:opacity-50">무지개 뽑기 잠금 해제 (2000 코인)</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl text-center max-w-sm w-full">
+            <h3 class="text-xl font-bold mb-4" id="modalTitle"></h3>
+            <p id="modalMessage" class="mb-6"></p>
+            <button id="modalCloseBtn" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-full">확인</button>
+        </div>
+    </div>
+
+    <script>
+        class LotteryGame {
+            constructor() {
+                this.baseChance = 0.01;
+                this.baseCooldown = 3000;
+                this.currentCooldown = this.baseCooldown;
+                this.drawCount = 0;
+                this.isOnCooldown = false;
+                this.revealedDigits = [];
+                this.targetCode = '';
+                this.playTimeInterval = null;
+                this.startTime = Date.now();
+                this.totalCoins = 0;
+                this.gameActive = true;
+                this.timeBonusMultiplier = 1;
+
+                this.machines = {
+                    1: { level: 1, drawCount: 0, active: false, goldenUnlocked: false, rainbowUnlocked: false, cooldownMultiplier: 3, intervalId: null, color: 'orange', expanded: true },
+                    2: { level: 1, drawCount: 0, active: false, goldenUnlocked: false, rainbowUnlocked: false, cooldownMultiplier: 2.5, intervalId: null, color: 'green', expanded: true },
+                    3: { level: 1, drawCount: 0, active: false, goldenUnlocked: false, rainbowUnlocked: false, cooldownMultiplier: 2, intervalId: null, color: 'sky', expanded: true },
+                    4: { level: 1, drawCount: 0, active: false, goldenUnlocked: false, rainbowUnlocked: false, cooldownMultiplier: 1.8, intervalId: null, color: 'indigo', expanded: true },
+                    5: { level: 1, drawCount: 0, active: false, goldenUnlocked: false, rainbowUnlocked: false, cooldownMultiplier: 1.5, intervalId: null, color: 'purple', expanded: true }
+                };
+                
+                this.levelCosts = [10, 20, 50, 100, 200, 500, 800, 1000, 1500, 2000];
+                this.goldenCost = 500;
+                this.rainbowCost = 2000;
+                
+                this.initializeElements();
+                this.updateTodayCode();
+                this.updateDisplay();
+                this.bindEvents();
+                this.startPlayTimer();
+            }
+
+            initializeElements() {
+                this.playTimeEl = document.getElementById('playTime');
+                this.currentProgressEl = document.getElementById('currentProgress');
+                this.currentChanceEl = document.getElementById('currentChance');
+                this.cooldownTimeEl = document.getElementById('cooldownTime');
+                this.drawCountEl = document.getElementById('drawCount');
+                this.drawButton = document.getElementById('drawButton');
+                this.buttonStatus = document.getElementById('buttonStatus');
+                this.resultArea = document.getElementById('resultArea');
+                this.totalCoinsEl = document.getElementById('totalCoins');
+                this.coinsPopupContainer = document.getElementById('coinsPopupContainer');
+                
+                this.machineElements = {};
+                for (let i = 1; i <= 5; i++) {
+                    this.machineElements[i] = {
+                        wrapper: document.getElementById(`autoMachine${i}Wrapper`),
+                        statusEl: document.getElementById(`autoStatus${i}`),
+                        progressEl: document.getElementById(`autoProgress${i}`),
+                        levelEl: document.getElementById(`autoLevel${i}`),
+                        chanceEl: document.getElementById(`autoChance${i}`),
+                        drawCountEl: document.getElementById(`autoDrawCount${i}`),
+                        levelUpBtn: document.getElementById(`levelUpAuto${i}`),
+                        unlockGoldenBtn: document.getElementById(`unlockGolden${i}`),
+                        unlockRainbowBtn: document.getElementById(`unlockRainbow${i}`),
+                        toggleBtn: document.getElementById(`toggleAuto${i}`),
+                        content: document.getElementById(`accordionContent${i}`)
+                    };
+                }
+
+                this.modal = document.getElementById('messageModal');
+                this.modalTitle = document.getElementById('modalTitle');
+                this.modalMessage = document.getElementById('modalMessage');
+                this.modalCloseBtn = document.getElementById('modalCloseBtn');
+            }
+            
+            showMessageModal(title, message) {
+                this.modalTitle.textContent = title;
+                this.modalMessage.textContent = message;
+                this.modal.classList.remove('hidden');
+            }
+
+            hideMessageModal() {
+                this.modal.classList.add('hidden');
+            }
+            
+            startPlayTimer() {
+                this.playTimeInterval = setInterval(() => {
+                    if (!this.gameActive) return;
+                    const elapsed = Date.now() - this.startTime;
+                    const minutes = Math.floor(elapsed / 60000);
+                    const seconds = Math.floor((elapsed % 60000) / 1000);
+                    if(this.playTimeEl) this.playTimeEl.textContent = `${minutes}분 ${seconds}초`;
+                    
+                    this.updateMinCooldown(minutes);
+                    
+                    if (minutes >= 10 && this.gameActive) {
+                        this.forceCodeReveal();
+                    }
+
+                }, 1000);
+            }
+            
+            updateMinCooldown(minutes) {
+                if (minutes >= 5) {
+                    this.minCooldown = 400;
+                } else if (minutes >= 3) {
+                    this.minCooldown = 500;
+                } else if (minutes >= 2) {
+                    this.minCooldown = 800;
+                } else {
+                    this.minCooldown = 1200;
+                }
+            }
+
+            updateTodayCode() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = today.getMonth() + 1;
+                const day = today.getDate();
+                const code = year * month * day;
+                this.targetCode = code.toString().slice(0, 5);
+                this.updateProgressDisplay();
+            }
+
+            updateProgressDisplay() {
+                let display = '';
+                for (let i = 0; i < this.targetCode.length; i++) {
+                    if (this.revealedDigits.includes(i)) {
+                        display += this.targetCode[i];
+                    } else {
+                        display += '?';
+                    }
+                }
+                if (this.currentProgressEl) this.currentProgressEl.textContent = display || '?????';
+            }
+
+            getChance(drawCount, isRainbowDraw) {
+                const bonusChance = Math.floor(drawCount / 10) * 0.01;
+                let chance = this.baseChance + bonusChance;
+                if (isRainbowDraw) {
+                    chance += 0.01;
+                }
+                return chance;
+            }
+            
+            getSpecialDrawChance() {
+                let chanceMultiplier = 1;
+                let isRainbowManual = this.drawCount >= 80; // Changed condition
+                let isGoldenManual = this.drawCount > 0 && this.drawCount % 15 === 0;
+                
+                if (isRainbowManual) {
+                    chanceMultiplier = 5;
+                } else if (isGoldenManual) {
+                    chanceMultiplier = 2;
+                }
+
+                let chance = this.getChance(this.drawCount, isRainbowManual) * chanceMultiplier;
+                return chance;
+            }
+            
+            getAutoMachineChance(machineNumber) {
+                const machine = this.machines[machineNumber];
+                const baseChanceBonus = 0.01;
+                let levelBonusMultiplier = 1;
+                if (machineNumber === 4) {
+                    levelBonusMultiplier = 1.5;
+                } else if (machineNumber === 5) {
+                    levelBonusMultiplier = 2;
+                }
+                
+                const levelBonus = (machine.level - 1) * 0.002 * levelBonusMultiplier;
+                const drawBonus = Math.floor(machine.drawCount / 5) * (baseChanceBonus + levelBonus);
+
+                let chance = this.baseChance + drawBonus;
+                let chanceMultiplier = 1;
+                
+                if (machine.goldenUnlocked && machine.drawCount > 0 && machine.drawCount % 8 === 0) {
+                    chanceMultiplier *= 2;
+                }
+                if (machine.rainbowUnlocked && machine.drawCount > 0 && machine.drawCount % 20 === 0) {
+                    chanceMultiplier *= 5;
+                    chance += 0.01;
+                }
+                
+                return chance * chanceMultiplier;
+            }
+            
+            updateCurrentCooldown() {
+                this.currentCooldown = this.currentCooldown * 0.985; // Changed cooldown reduction to 1.5%
+                this.currentCooldown = Math.max(this.minCooldown, this.currentCooldown);
+            }
+
+            getCoinsGained(level, machine) {
+                let baseCoins = 1;
+                if (level >= 1) {
+                    baseCoins = 1 + (level - 1) * 2;
+                }
+                
+                let coinMultiplier = this.timeBonusMultiplier;
+                if (machine) {
+                    if (machine.goldenUnlocked) {
+                        coinMultiplier *= 2;
+                    }
+                    if (machine.rainbowUnlocked) {
+                        coinMultiplier *= 3;
+                    }
+                } else { // Manual draw
+                    if (this.drawCount >= 80) { // Changed condition
+                        coinMultiplier *= 3;
+                    } else if (this.drawCount > 0 && this.drawCount % 15 === 0) {
+                        coinMultiplier *= 2;
+                    }
+                }
+                
+                return Math.floor(baseCoins * coinMultiplier);
+            }
+
+            updateDisplay() {
+                if (this.cooldownTimeEl) this.cooldownTimeEl.textContent = (this.currentCooldown / 1000).toFixed(2) + '초';
+                if (this.drawCountEl) this.drawCountEl.textContent = this.drawCount.toString();
+                if (this.totalCoinsEl) this.totalCoinsEl.textContent = this.totalCoins.toString();
+                if (this.currentChanceEl) this.currentChanceEl.textContent = this.getSpecialDrawChance().toFixed(2) + '%';
+                
+                this.drawButton.className = 'text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none';
+                
+                if (this.gameActive) {
+                    const isRainbowManual = this.drawCount >= 80;
+                    const isGoldenManual = this.drawCount > 0 && this.drawCount % 15 === 0;
+                    if (isRainbowManual) {
+                        this.drawButton.classList.add('rainbow-btn');
+                        this.drawButton.textContent = '🌈 무지개 뽑기!';
+                        this.currentChanceEl.classList.add('rainbow-text');
+                    } else if (isGoldenManual) {
+                        this.drawButton.classList.add('golden-btn');
+                        this.drawButton.textContent = '✨ 황금 뽑기!';
+                        this.currentChanceEl.classList.remove('rainbow-text');
+                    } else {
+                        this.drawButton.classList.add('bg-gradient-to-r', 'from-pink-500', 'to-purple-600', 'hover:from-pink-600', 'hover:to-purple-700');
+                        this.drawButton.textContent = '🎲 뽑기!';
+                        this.currentChanceEl.classList.remove('rainbow-text');
+                    }
+                } else {
+                    this.drawButton.classList.add('bg-gray-400');
+                    this.drawButton.textContent = '게임 종료';
+                }
+                
+                this.updateMachineVisibility();
+                this.updateMachineUpgrades();
+            }
+            
+            updateMachineVisibility() {
+                const machine1 = this.machines[1];
+                const machine2 = this.machines[2];
+                const machine3 = this.machines[3];
+                const machine4 = this.machines[4];
+                const machine5 = this.machines[5];
+
+                if (this.drawCount >= 10 && !machine1.active) {
+                    this.activateAutoMachine(1);
+                }
+
+                if (machine1.level >= 3 && machine1.drawCount >= 20 && !machine2.active) {
+                    this.activateAutoMachine(2);
+                }
+
+                if (machine1.level >= 4 && machine2.level >= 4 && machine2.drawCount >= 30 && !machine3.active) {
+                    this.activateAutoMachine(3);
+                }
+
+                if (machine1.level >= 5 && machine2.level >= 5 && machine3.level >= 5 && machine3.drawCount >= 50 && !machine4.active) {
+                    this.activateAutoMachine(4);
+                }
+
+                if (machine1.level >= 6 && machine2.level >= 6 && machine3.level >= 6 && machine4.level >= 6 && machine4.drawCount >= 80 && !machine5.active) {
+                    this.activateAutoMachine(5);
+                }
+            }
+
+            updateMachineUpgrades() {
+                for (let i = 1; i <= 5; i++) {
+                    const machine = this.machines[i];
+                    const elements = this.machineElements[i];
+
+                    if (elements && elements.wrapper && !elements.wrapper.classList.contains('hidden')) {
+                        if (elements.levelEl) elements.levelEl.textContent = machine.level;
+                        if (elements.chanceEl) elements.chanceEl.textContent = this.getAutoMachineChance(i).toFixed(3) + '%';
+                        if (elements.drawCountEl) elements.drawCountEl.textContent = machine.drawCount;
+                        
+                        const nextLevelCost = this.levelCosts[machine.level - 1];
+                        if (machine.level < 10) {
+                            if (elements.levelUpBtn) {
+                                elements.levelUpBtn.textContent = `레벨업 (${nextLevelCost} 코인)`;
+                                elements.levelUpBtn.disabled = this.totalCoins < nextLevelCost || !this.gameActive;
+                                elements.levelUpBtn.classList.remove('hidden');
+                            }
+                        } else {
+                            if (elements.levelUpBtn) elements.levelUpBtn.classList.add('hidden');
+                        }
+                        
+                        if (machine.level >= 5 && !machine.goldenUnlocked) {
+                            if (elements.unlockGoldenBtn) {
+                                elements.unlockGoldenBtn.classList.remove('hidden');
+                                elements.unlockGoldenBtn.disabled = this.totalCoins < this.goldenCost || !this.gameActive;
+                            }
+                        } else if (machine.goldenUnlocked) {
+                            if (elements.unlockGoldenBtn) {
+                                elements.unlockGoldenBtn.classList.remove('hidden');
+                                elements.unlockGoldenBtn.textContent = '황금 뽑기 잠금 해제됨';
+                                elements.unlockGoldenBtn.disabled = true;
+                            }
+                        } else {
+                            if (elements.unlockGoldenBtn) elements.unlockGoldenBtn.classList.add('hidden');
+                        }
+
+                        if (machine.level >= 10 && !machine.rainbowUnlocked) {
+                            if (elements.unlockRainbowBtn) {
+                                elements.unlockRainbowBtn.classList.remove('hidden');
+                                elements.unlockRainbowBtn.disabled = this.totalCoins < this.rainbowCost || !this.gameActive;
+                            }
+                        } else if (machine.rainbowUnlocked) {
+                            if (elements.unlockRainbowBtn) {
+                                elements.unlockRainbowBtn.classList.remove('hidden');
+                                elements.unlockRainbowBtn.textContent = '무지개 뽑기 잠금 해제됨';
+                                elements.unlockRainbowBtn.disabled = true;
+                            }
+                        } else {
+                            if (elements.unlockRainbowBtn) elements.unlockRainbowBtn.classList.add('hidden');
+                        }
+                        
+                        if (elements.content) {
+                            elements.content.classList.toggle('expanded', machine.expanded);
+                            elements.toggleBtn.textContent = machine.expanded ? '간단히 보기' : '자세히 보기';
+                        }
+                    }
+                }
+            }
+            
+            bindEvents() {
+                if (this.drawButton) this.drawButton.addEventListener('click', () => this.draw());
+                this.modalCloseBtn.addEventListener('click', () => this.hideMessageModal());
+                
+                for (let i = 1; i <= 5; i++) {
+                    const elements = this.machineElements[i];
+                    if (elements.levelUpBtn) elements.levelUpBtn.addEventListener('click', () => this.levelUp(i));
+                    if (elements.unlockGoldenBtn) elements.unlockGoldenBtn.addEventListener('click', () => this.unlockGoldenDraw(i));
+                    if (elements.unlockRainbowBtn) elements.unlockRainbowBtn.addEventListener('click', () => this.unlockRainbowDraw(i));
+                    if (elements.toggleBtn) elements.toggleBtn.addEventListener('click', () => this.toggleAccordion(i));
+                }
+            }
+            
+            toggleAccordion(machineNumber) {
+                const machine = this.machines[machineNumber];
+                machine.expanded = !machine.expanded;
+                this.updateMachineUpgrades();
+            }
+
+            levelUp(machineNumber) {
+                if (!this.gameActive) return;
+                const machine = this.machines[machineNumber];
+                const cost = this.levelCosts[machine.level - 1];
+                if (this.totalCoins >= cost && machine.level < 10) {
+                    this.totalCoins -= cost;
+                    machine.level++;
+                    this.updateDisplay();
+                } else if (machine.level >= 10) {
+                    this.showMessageModal("최대 레벨", "이미 최대 레벨에 도달했습니다.");
+                } else {
+                    this.showMessageModal("코인 부족", "레벨업에 필요한 코인이 부족합니다.");
+                }
+            }
+
+            unlockGoldenDraw(machineNumber) {
+                if (!this.gameActive) return;
+                const machine = this.machines[machineNumber];
+                if (this.totalCoins >= this.goldenCost) {
+                    this.totalCoins -= this.goldenCost;
+                    machine.goldenUnlocked = true;
+                    this.updateDisplay();
+                    this.showMessageModal("잠금 해제 완료", "황금 뽑기가 잠금 해제되었습니다!");
+                } else {
+                    this.showMessageModal("코인 부족", "황금 뽑기 잠금 해제에 필요한 코인이 부족합니다.");
+                }
+            }
+            
+            unlockRainbowDraw(machineNumber) {
+                if (!this.gameActive) return;
+                const machine = this.machines[machineNumber];
+                if (this.totalCoins >= this.rainbowCost) {
+                    this.totalCoins -= this.rainbowCost;
+                    machine.rainbowUnlocked = true;
+                    this.updateDisplay();
+                    this.showMessageModal("잠금 해제 완료", "무지개 뽑기가 잠금 해제되었습니다!");
+                } else {
+                    this.showMessageModal("코인 부족", "무지개 뽑기 잠금 해제에 필요한 코인이 부족합니다.");
+                }
+            }
+
+            draw() {
+                if (!this.gameActive || this.isOnCooldown) return;
+                this.drawCount++;
+                this.updateCurrentCooldown();
+                
+                const random = Math.random() * 100;
+                const isRainbowManual = this.drawCount >= 80;
+                const currentChance = this.getChance(this.drawCount, isRainbowManual);
+                
+                const totalCoinsGained = this.getCoinsGained(1, null);
+                this.totalCoins += totalCoinsGained;
+                this.showCoinPopup(totalCoinsGained);
+                this.resultArea.innerHTML = '';
+                
+                if (random < currentChance) {
+                    this.showResult(true, 0);
+                } else {
+                    this.showResult(false, 0);
+                }
+                
+                this.startCooldown();
+                this.updateDisplay();
+            }
+
+            showCoinPopup(coins) {
+                const popup = document.createElement('div');
+                popup.textContent = `+${coins} 코인`;
+                popup.classList.add('coin-popup');
+                if (this.coinsPopupContainer) {
+                    this.coinsPopupContainer.appendChild(popup);
+                    setTimeout(() => popup.remove(), 1000);
+                }
+            }
+
+            activateAutoMachine(machineNumber) {
+                if (!this.gameActive) return;
+                const wrapper = this.machineElements[machineNumber]?.wrapper;
+                if (!wrapper) return;
+                
+                this.machines[machineNumber].active = true;
+                wrapper.classList.remove('hidden');
+                this.startAutoMachine(machineNumber);
+                this.showMessageModal("기계 잠금 해제", `자동 뽑기 기계 ${machineNumber}이 잠금 해제되었습니다!`);
+            }
+
+            startAutoMachine(machineNumber) {
+                if (!this.gameActive || !this.machines[machineNumber].active) return;
+                const machine = this.machines[machineNumber];
+                const autoCooldown = this.currentCooldown * machine.cooldownMultiplier;
+                const elements = this.machineElements[machineNumber];
+                const { statusEl, progressEl } = elements;
+                let remainingTime = autoCooldown;
+                
+                clearInterval(machine.intervalId);
+
+                machine.intervalId = setInterval(() => {
+                    if (!this.gameActive || remainingTime <= 0) {
+                        clearInterval(machine.intervalId);
+                        if (!this.gameActive) return;
+                        this.performAutoDraw(machineNumber);
+                        return;
+                    }
+                    const progress = ((autoCooldown - remainingTime) / autoCooldown) * 100;
+                    if(progressEl) progressEl.style.width = progress + '%';
+                    if(statusEl) statusEl.textContent = `${(remainingTime / 1000).toFixed(1)}초 후 자동 뽑기`;
+                    remainingTime -= 100;
+                }, 100);
+            }
+
+            performAutoDraw(machineNumber) {
+                if (!this.gameActive) return;
+                const machine = this.machines[machineNumber];
+                machine.drawCount++;
+                this.updateMachineUpgrades();
+                
+                const random = Math.random() * 100;
+                const isRainbowAuto = machine.rainbowUnlocked && machine.drawCount > 0 && machine.drawCount % 20 === 0;
+                const autoChance = this.getAutoMachineChance(machineNumber);
+
+                const totalCoinsGained = this.getCoinsGained(machine.level, machine);
+                this.totalCoins += totalCoinsGained;
+                this.showCoinPopup(totalCoinsGained);
+
+                if (random < autoChance) {
+                    this.showResult(true, machineNumber);
+                } else {
+                    this.showResult(false, machineNumber);
+                }
+                
+                this.startAutoMachine(machineNumber);
+            }
+
+            showResult(isCodeWin, machineNumber) {
+                if(this.resultArea) this.resultArea.innerHTML = '';
+                
+                if (isCodeWin) {
+                    this.revealNextDigit();
+                    const revealedDigit = this.getLastRevealedDigit();
+                    let machineText;
+                    if (machineNumber === 0) machineText = `일반 뽑기`;
+                    else machineText = `자동 ${machineNumber}번 기계`;
+                    if(this.resultArea) this.resultArea.innerHTML = `
+                        <div class="winner">
+                            <p class="text-2xl font-bold text-yellow-600 mb-2">${machineText} 당첨!</p>
+                            <p class="text-lg text-green-600">새로운 숫자 공개: <span class="font-bold text-2xl">${revealedDigit}</span></p>
+                        </div>
+                    `;
+                    if(this.resultArea) this.resultArea.classList.add('sparkle');
+                    setTimeout(() => { if(this.resultArea) this.resultArea.classList.remove('sparkle'); }, 600);
+                    
+                    if (this.revealedDigits.length === this.targetCode.length) {
+                        this.gameActive = false;
+                        clearInterval(this.playTimeInterval);
+                        
+                        for (const machineNumber in this.machines) {
+                            clearInterval(this.machines[machineNumber].intervalId);
+                        }
+
+                        this.drawButton.disabled = true;
+                        this.drawButton.classList.add('bg-gray-400', 'cursor-not-allowed', 'transform-none');
+                        
+                        setTimeout(() => {
+                            if(this.resultArea) this.resultArea.innerHTML = `
+                                <div class="mt-4 p-4 bg-green-100 rounded-lg">
+                                    <p class="text-xl font-bold text-green-800">🎊 게임 클리어! 오늘의 코드 획득!</p>
+                                    <p class="text-3xl font-bold text-green-800 tracking-wider mt-2">${this.targetCode}</p>
+                                </div>
+                            `;
+                        }, 1000);
+                    }
+                }
+            }
+
+            revealNextDigit() {
+                const unrevealedPositions = [];
+                for (let i = 0; i < this.targetCode.length; i++) {
+                    if (!this.revealedDigits.includes(i)) {
+                        unrevealedPositions.push(i);
+                    }
+                }
+                
+                if (unrevealedPositions.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * unrevealedPositions.length);
+                    const positionToReveal = unrevealedPositions[randomIndex];
+                    this.revealedDigits.push(positionToReveal);
+                    this.updateProgressDisplay();
+                }
+            }
+            
+            forceCodeReveal() {
+                this.revealedDigits = [0, 1, 2, 3, 4];
+                this.updateProgressDisplay();
+                this.gameActive = false;
+                clearInterval(this.playTimeInterval);
+                
+                for (const machineNumber in this.machines) {
+                    clearInterval(this.machines[machineNumber].intervalId);
+                }
+
+                this.drawButton.disabled = true;
+                this.drawButton.classList.add('bg-gray-400', 'cursor-not-allowed', 'transform-none');
+                
+                if(this.resultArea) this.resultArea.innerHTML = `
+                    <div class="mt-4 p-4 bg-red-100 rounded-lg">
+                        <p class="text-xl font-bold text-red-800">😵‍💫 운이 없으시네요!</p>
+                        <p class="text-lg text-red-600 mt-2">10분이 지나 코드를 공개합니다.</p>
+                        <p class="text-3xl font-bold text-green-800 tracking-wider mt-2">${this.targetCode}</p>
+                    </div>
+                `;
+            }
+
+            getLastRevealedDigit() {
+                if (this.revealedDigits.length === 0) return '?';
+                const lastPosition = this.revealedDigits[this.revealedDigits.length - 1];
+                return this.targetCode[lastPosition];
+            }
+
+            startCooldown() {
+                if (!this.gameActive) return;
+                this.isOnCooldown = true;
+                if(this.drawButton) this.drawButton.disabled = true;
+                
+                let remainingTime = this.currentCooldown / 1000;
+                const updateCooldownDisplay = () => {
+                    if (remainingTime > 0) {
+                        if(this.buttonStatus) this.buttonStatus.textContent = `재사용까지 ${remainingTime.toFixed(1)}초`;
+                        remainingTime -= 0.1;
+                        setTimeout(updateCooldownDisplay, 100);
+                    } else {
+                        this.isOnCooldown = false;
+                        if(this.drawButton) this.drawButton.disabled = false;
+                        if(this.buttonStatus) this.buttonStatus.textContent = '';
+                    }
+                };
+                updateCooldownDisplay();
+            }
+        }
+
+        new LotteryGame();
+    </script>
+</body>
+</html>
