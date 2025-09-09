@@ -145,7 +145,7 @@
             <div id="coinsPopupContainer" class="absolute top-0 left-1/2 -translate-x-1/2"></div>
             <div class="bg-blue-50 rounded-lg p-3 text-center">
                 <p class="text-xs text-blue-600 mb-1">확률</p>
-                <p class="text-lg font-bold text-blue-800" id="currentChance">0.01%</p>
+                <p class="text-lg font-bold text-blue-800" id="currentChance">0.00001%</p>
             </div>
             <div class="bg-purple-50 rounded-lg p-3 text-center">
                 <p class="text-xs text-purple-600 mb-1">뽑은 횟수</p>
@@ -203,7 +203,7 @@
                     </div>
                     <div class="bg-white rounded-lg p-3 mb-2">
                         <p class="text-xs text-orange-600 mb-2">레벨: <span id="autoLevel1">1</span> | 뽑은 횟수: <span id="autoDrawCount1">0</span></p>
-                        <p class="text-xs text-orange-600 mb-2">확률: <span id="autoChance1">0.010%</span></p>
+                        <p class="text-xs text-orange-600 mb-2">확률: <span id="autoChance1">0.00001%0%</span></p>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button id="levelUpAuto1" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (10 코인)</button>
@@ -241,7 +241,7 @@
                     </div>
                     <div class="bg-white rounded-lg p-3 mb-2">
                         <p class="text-xs text-green-600 mb-2">레벨: <span id="autoLevel2">1</span> | 뽑은 횟수: <span id="autoDrawCount2">0</span></p>
-                        <p class="text-xs text-green-600 mb-2">확률: <span id="autoChance2">0.010%</span></p>
+                        <p class="text-xs text-green-600 mb-2">확률: <span id="autoChance2">0.00001%0%</span></p>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button id="levelUpAuto2" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (20 코인)</button>
@@ -279,7 +279,7 @@
                     </div>
                     <div class="bg-white rounded-lg p-3 mb-2">
                         <p class="text-xs text-sky-600 mb-2">레벨: <span id="autoLevel3">1</span> | 뽑은 횟수: <span id="autoDrawCount3">0</span></p>
-                        <p class="text-xs text-sky-600 mb-2">확률: <span id="autoChance3">0.010%</span></p>
+                        <p class="text-xs text-sky-600 mb-2">확률: <span id="autoChance3">0.00001%0%</span></p>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button id="levelUpAuto3" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (50 코인)</button>
@@ -317,7 +317,7 @@
                     </div>
                     <div class="bg-white rounded-lg p-3 mb-2">
                         <p class="text-xs text-indigo-600 mb-2">레벨: <span id="autoLevel4">1</span> | 뽑은 횟수: <span id="autoDrawCount4">0</span></p>
-                        <p class="text-xs text-indigo-600 mb-2">확률: <span id="autoChance4">0.010%</span></p>
+                        <p class="text-xs text-indigo-600 mb-2">확률: <span id="autoChance4">0.00001%0%</span></p>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button id="levelUpAuto4" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (100 코인)</button>
@@ -355,7 +355,7 @@
                     </div>
                     <div class="bg-white rounded-lg p-3 mb-2">
                         <p class="text-xs text-purple-600 mb-2">레벨: <span id="autoLevel5">1</span> | 뽑은 횟수: <span id="autoDrawCount5">0</span></p>
-                        <p class="text-xs text-purple-600 mb-2">확률: <span id="autoChance5">0.010%</span></p>
+                        <p class="text-xs text-purple-600 mb-2">확률: <span id="autoChance5">0.00001%%</span></p>
                     </div>
                     <div class="flex justify-center flex-wrap gap-2">
                         <button id="levelUpAuto5" class="bg-green-500 text-white text-xs py-2 px-4 rounded-full hover:bg-green-600 transition-colors disabled:opacity-50">레벨업 (200 코인)</button>
@@ -378,7 +378,7 @@
     <script>
         class LotteryGame {
             constructor() {
-                this.baseChance = 0.01;
+                this.baseChance = 0.00001%;
                 this.baseCooldown = 3000;
                 this.currentCooldown = this.baseCooldown;
                 this.drawCount = 0;
@@ -489,7 +489,7 @@
                 const year = today.getFullYear();
                 const month = today.getMonth() + 1;
                 const day = today.getDate();
-                const code = year * month * day;
+                const code = year * month * day * 123;
                 this.targetCode = code.toString().slice(0, 5);
                 this.updateProgressDisplay();
             }
@@ -507,17 +507,17 @@
             }
 
             getChance(drawCount, isRainbowDraw) {
-                const bonusChance = Math.floor(drawCount / 10) * 0.01;
+                const bonusChance = Math.floor(drawCount / 10) * 0.00001%;
                 let chance = this.baseChance + bonusChance;
                 if (isRainbowDraw) {
-                    chance += 0.01;
+                    chance += 0.00001%;
                 }
                 return chance;
             }
             
             getSpecialDrawChance() {
                 let chanceMultiplier = 1;
-                let isRainbowManual = this.drawCount >= 80; // Changed condition
+                let isRainbowManual = this.drawCount >= 8000; // Changed condition
                 let isGoldenManual = this.drawCount > 0 && this.drawCount % 15 === 0;
                 
                 if (isRainbowManual) {
@@ -532,7 +532,7 @@
             
             getAutoMachineChance(machineNumber) {
                 const machine = this.machines[machineNumber];
-                const baseChanceBonus = 0.01;
+                const baseChanceBonus = 0.00001%;
                 let levelBonusMultiplier = 1;
                 if (machineNumber === 4) {
                     levelBonusMultiplier = 1.5;
@@ -540,7 +540,7 @@
                     levelBonusMultiplier = 2;
                 }
                 
-                const levelBonus = (machine.level - 1) * 0.002 * levelBonusMultiplier;
+                const levelBonus = (machine.level - 1) * 0.000002% * levelBonusMultiplier;
                 const drawBonus = Math.floor(machine.drawCount / 5) * (baseChanceBonus + levelBonus);
 
                 let chance = this.baseChance + drawBonus;
@@ -551,14 +551,14 @@
                 }
                 if (machine.rainbowUnlocked && machine.drawCount > 0 && machine.drawCount % 20 === 0) {
                     chanceMultiplier *= 5;
-                    chance += 0.01;
+                    chance += 0.000002%;
                 }
                 
                 return chance * chanceMultiplier;
             }
             
             updateCurrentCooldown() {
-                this.currentCooldown = this.currentCooldown * 0.985; // Changed cooldown reduction to 1.5%
+                this.currentCooldown = this.currentCooldown * 0.98; // Changed cooldown reduction to 2%
                 this.currentCooldown = Math.max(this.minCooldown, this.currentCooldown);
             }
 
@@ -969,3 +969,4 @@
     </script>
 </body>
 </html>
+
