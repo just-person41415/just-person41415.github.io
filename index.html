@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 큐브 코인 시뮬레이터 (로그인 시스템)</title>
+    <!-- Tailwind CSS 로드 --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js (3D 라이브러리) 로드 --><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Chart.js (그래프 라이브러리) 로드 --><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 'Inter' 폰트 및 기본 스타일 적용 */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* 전체 페이지 스크롤 방지 */
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        
+        /* 3D 캔버스 스타일 (renderer.domElement) */
+        canvas { display: block; }
+        
+        /* 스크롤바 커스텀 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .history-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #93c5fd; border-radius: 20px; }
+        .history-scrollbar::-webkit-scrollbar-thumb { background-color: #93c5fd; border-radius: 20px; }
+
+        /* 비활성화된 버튼 스타일 */
+        .btn-disabled { background-color: #4b5563 !important; cursor: not-allowed; opacity: 0.7; }
+        
+        /* 탭 활성화 스타일 (v2) */
+        .tab-active { border-bottom-color: #60a5fa !important; color: #60a5fa !important; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- 
+    ==========================================
+    로그인 컨테이너
+    ==========================================
+    -->
+    <div id="login-container" class="fixed inset-0 bg-gray-900 flex justify-center items-center z-50">
+        <div class="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg">
+            
+            <!-- 로그인 폼 -->
+            <div id="login-form">
+                <h2 class="text-2xl font-bold text-center text-white">로그인</h2>
+                <div class="mt-4 space-y-4">
+                    <input type="email" id="login-email" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="이메일">
+                    <input type="password" id="login-password" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="비밀번호">
+                    <button id="login-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg transition-colors">로그인</button>
+                </div>
+                <p class="mt-4 text-center text-sm text-gray-400">
+                    계정이 없으신가요? <a href="#" id="show-signup-form" class="font-medium text-blue-400 hover:underline">회원가입</a>
+                </p>
+            </div>
+
+            <!-- 회원가입 폼 (기본 숨김) -->
+            <div id="signup-form" class="hidden">
+                <h2 class="text-2xl font-bold text-center text-white">회원가입</h2>
+                <div class="mt-4 space-y-4">
+                    <input type="email" id="signup-email" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="이메일">
+                    <input type="password" id="signup-password" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="비밀번호 (6자 이상)">
+                    <input type="password" id="signup-password-confirm" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="비밀번호 확인">
+                    <button id="signup-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold p-3 rounded-lg transition-colors">회원가입</button>
+                </div>
+                <p class="mt-4 text-center text-sm text-gray-400">
+                    이미 계정이 있으신가요? <a href="#" id="show-login-form" class="font-medium text-blue-400 hover:underline">로그인</a>
+                </p>
+            </div>
+            
+            <p id="login-error-message" class="text-center text-sm text-red-400 h-4"></p>
+        </div>
+    </div>
+
+
+    <!-- 
+    ==========================================
+    업데이트 카운트다운 배너
+    ==========================================
+    -->
+    <div id="update-countdown-banner" class="fixed top-0 left-0 right-0 bg-yellow-100 border-b-2 border-yellow-300 p-3 text-center text-gray-900 z-40 hidden" style="background-color: #ffeedd; border-color: #ffc97e; color: #7a4a00;">
+        <div class="flex justify-between items-center max-w-6xl mx-auto px-4">
+            <span class="font-bold text-lg">
+                <span class="text-blue-600">v.0.2.2 프리즘 업데이트</span>가 잠시 후 시작됩니다!
+            </span>
+            <span id="countdown-timer" class="text-2xl font-bold text-red-600 bg-white px-3 py-1 rounded-lg shadow-inner">00:00:00</span>
+            <button id="hide-countdown-banner" class="bg-gray-700 hover:bg-gray-800 text-white text-sm py-1 px-3 rounded-lg">&times; 숨기기</button>
+        </div>
+    </div>
+
+    <!-- 
+    ==========================================
+    v0 (구 버전) 게임 컨테이너
+    ==========================================
+    -->
+    <div id="v0-container" class="hidden">
+        <div class="flex flex-col lg:flex-row w-full h-screen">
+            <!-- 왼쪽: 3D 뷰어 및 현재 가격 --><div id="v0-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black">
+                <!-- 3D 캔버스 --><div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20">
+                    <h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2>
+                    <div id="v0-current-price" class="text-4xl font-bold text-white">100,000 KRW</div>
+                    <div id="v0-price-change" class="text-lg font-medium text-gray-300">-</div>
+                </div>
+                <!-- 큐브 구매 오버레이 --><div id="v0-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10">
+                    <h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3>
+                    <p class="text-gray-300 mb-4">큐브의 실시간 3D 회전을 활성화하려면 10,000,000 KRW가 필요합니다.</p>
+                    <button id="v0-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">10,000,000 KRW에 구매</button>
+                </div>
+            </div>
+            <!-- 오른쪽: 대시보드 --><div class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto history-scrollbar">
+                <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터</h1>
+                <!-- 자산 현황 --><div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-sm font-semibold text-gray-300">보유 현금 (KRW)</h3><div id="v0-user-cash" class="text-2xl font-bold text-blue-400">1,000,000</div></div>
+                    <div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-sm font-semibold text-gray-300">보유 큐브 (CUBE)</h3><div id="v0-user-cubes" class="text-2xl font-bold text-purple-400">0</div></div>
+                </div>
+                <!-- 매수/매도 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg"><label for="v0-amount-input" class="text-sm font-semibold text-gray-300">거래 수량 (CUBE)</label><input type="number" id="v0-amount-input" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0-buy-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold p-3 rounded-lg transition-colors shadow-lg">매수</button><button id="v0-sell-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded-lg transition-colors shadow-lg">매도</button></div></div>
+                <!-- 차트 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">실시간 차트</h3><div class="h-40"><canvas id="v0-price-chart"></canvas></div></div>
+                <!-- 뉴스 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg flex-grow flex flex-col"><h3 class="text-lg font-semibold mb-2 text-white">실시간 큐브 뉴스</h3><div id="v0-news-feed" class="flex-grow h-24 overflow-y-auto history-scrollbar pr-2"><div class="text-gray-400 text-sm">...</div></div></div>
+                <!-- 거래 내역 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg flex-grow flex flex-col"><h3 class="text-lg font-semibold mb-2 text-white">거래 내역</h3><div id="v0-transaction-history" class="flex-grow h-32 overflow-y-auto history-scrollbar pr-2"><div class="text-gray-400 text-sm text-center p-4">...</div></div></div>
+                <!-- 코드 입력 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">코드 입력</h3><div class="flex gap-4"><input type="text" id="v0-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v0-code-submit-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">입력</button></div></div>
+                <!-- 로그아웃 --><div id="v0-logout-section" class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">계정</h3><button id="v0-logout-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">로그아웃</button></div>
+            </div>
+        </div>
+        <div id="v0-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
+    </div>
+
+    <!-- 
+    ==========================================
+    v2 (신 버전) 게임 컨테이너
+    ==========================================
+    -->
+    <div id="v2-container" class="hidden">
+        <div class="flex flex-col lg:flex-row w-full h-screen">
+            <!-- 왼쪽: 3D 뷰어 --><div id="v2-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black transition-all duration-300">
+                <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20"><div><h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2><div id="v2-current-price" class="text-3xl font-bold text-white">10,000 KRW</div><div id="v2-price-change" class="text-lg font-medium text-gray-300">-</div></div><div class="mt-4"><h2 class="text-sm font-semibold text-pink-300 uppercase">PRISM-KRW</h2><div id="v2-current-prism-price" class="text-3xl font-bold text-white">50,000 KRW</div><div id="v2-prism-price-change" class="text-lg font-medium text-gray-300">-</div></div></div>
+                <div class="absolute bottom-4 left-4 flex flex-col md:flex-row gap-4 items-start md:items-end z-20"><div id="v2-passive-income-display" class="bg-black/50 backdrop-blur-sm p-3 rounded-lg shadow-xl hidden"><h3 class="text-sm font-semibold text-green-300">패시브 수입</h3><div id="v2-income-per-second" class="text-lg font-bold text-white">+0 KRW / sec</div></div><div id="v2-upgrade-prism-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-pink-300">프리즘 업그레이드</h3><p class="text-gray-300 text-sm mb-3">큐브를 프리즘으로 업그레이드<br>(필요: 100 PRISM)</p><button id="v2-upgrade-prism-button" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg">100 PRISM에 업그레이드</button></div></div>
+                <div id="v2-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10"><div id="v2-buy-cube-section"><h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3><p class="text-gray-300 mb-4">큐브를 활성화하고 초당 100 KRW를 생산하려면 10,000,000 KRW가 필요합니다.</p><button id="v2-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">10,000,000 KRW에 구매</button></div></div>
+            </div>
+            <!-- 오른쪽: 대시보드 --><div id="v2-dashboard" class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto custom-scrollbar transition-all duration-300">
+                <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터 v.0.2.2</h1>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-assets" class="px-4 pb-4"><div class="grid grid-cols-3 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="v2-user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="v2-user-cubes" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="v2-user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-trade"><h3 class="text-lg font-semibold text-white">매수 / 매도</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-trade-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-trade" class="px-4 pb-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><label class="text-lg font-semibold text-blue-300">CUBE 거래</label><input type="number" id="v2-amount-input-cube" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="CUBE 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v2-buy-button-cube" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v2-sell-button-cube" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div><div class="bg-gray-600 p-4 rounded-lg"><label class="text-lg font-semibold text-pink-300">PRISM 거래</label><input type="number" id="v2-amount-input-prism" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="PRISM 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v2-buy-button-prism" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v2-sell-button-prism" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-charts"><h3 class="text-lg font-semibold text-white">실시간 차트</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-charts" class="px-4 pb-4"><nav class="flex border-b border-gray-600 mb-4"><button id="v2-chart-tab-cube" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white tab-active">CUBE</button><button id="v2-chart-tab-prism" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">PRISM</button></nav><div id="v2-chart-cube-container" class="h-40"><canvas id="v2-price-chart"></canvas></div><div id="v2-chart-prism-container" class="h-40 hidden"><canvas id="v2-prism-price-chart"></canvas></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-history"><h3 class="text-lg font-semibold text-white">거래 내역</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-history-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-history" class="px-4 pb-4"><div id="v2-transaction-history" class="h-32 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-news"><h3 class="text-lg font-semibold text-white">실시간 뉴스 (예측)</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-news-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-news" class="px-4 pb-4"><div id="v2-news-feed" class="h-24 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-jobs"><h3 class="text-lg font-semibold text-white">다양한 돈벌이</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-jobs-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-jobs" class="px-4 pb-4"><div class="grid grid-cols-1 gap-4"><button id="v2-job-paper" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold p-3 rounded-lg">폐지 줍기 (+500)<span id="v2-job-paper-timer" class="text-xs block"></span></button></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="v2-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v2-code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-updates"><h3 class="text-lg font-semibold text-white">업데이트 내역 (v.0.2.2)</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-updates-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-updates" class="px-4 pb-4 hidden"><ul class="list-disc list-inside text-gray-300 text-sm space-y-1"><li>콘솔 오류 수정 및 Firebase 로직 안정화</li><li>코드 입력 1회 제한</li><li>프리즘 업그레이드 UI 위치 변경</li><li>'벽돌 운반' 기능 제거</li><li>'폐지 줍기' 발전과제 시스템 추가</li><li>v.0.2.2 업데이트 내역 추가</li></ul></div></div>
+                <!-- 로그아웃 --><div id="v2-logout-section" class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">계정</h3><button id="v2-logout-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">로그아웃</button></div>
+            </div>
+        </div>
+        <div id="v2-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
+    </div>
+
+    <!-- 
+    ==========================================
+    공통 JavaScript
+    ==========================================
+    -->
+    <script>
+        // --- 전역 설정 ---
+        let db, auth, userId;
+        let v0_priceUpdateInterval = null;
+        let v2_gameLoopTimeout = null;
+        let countdownInterval = null;
+        const UPDATE_TIME = new Date('2025-11-14T18:00:00+09:00');
+        const COUNTDOWN_START_TIME = new Date('2025-11-14T13:00:00+09:00');
+        
+        function getCurrentTime() {
+            const devTimeStr = sessionStorage.getItem('devTime');
+            if (devTimeStr) { sessionStorage.removeItem('devTime'); return new Date(devTimeStr); }
+            return new Date();
+        }
+
+        function startCountdown() {
+            const banner = document.getElementById('update-countdown-banner');
+            const timerDisplay = document.getElementById('countdown-timer');
+            const hideButton = document.getElementById('hide-countdown-banner');
+
+            if (!banner || !timerDisplay || !hideButton) return;
+
+            banner.classList.remove('hidden');
+
+            hideButton.addEventListener('click', () => {
+                banner.classList.add('hidden');
+                if (countdownInterval) clearInterval(countdownInterval);
+            });
+
+            const updateTimer = () => {
+                const now = getCurrentTime();
+                const timeLeft = UPDATE_TIME.getTime() - now.getTime();
+
+                if (timeLeft <= 0) {
+                    timerDisplay.textContent = '00:00:00';
+                    if(countdownInterval) clearInterval(countdownInterval);
+                    banner.classList.add('hidden');
+                    return;
+                }
+
+                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
+                const seconds = Math.floor((timeLeft / 1000) % 60);
+
+                timerDisplay.textContent = 
+                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            };
+
+            if (countdownInterval) clearInterval(countdownInterval);
+            updateTimer(); // Initial call
+            countdownInterval = setInterval(updateTimer, 1000);
+        }
+
+        function getDynamicRiseProbability(baseProb, currentTime, updateTime) {
+            const ms = updateTime.getTime() - currentTime.getTime();
+            if (ms > 0) { const min = ms / 60000; if (min <= 1) return baseProb + 0.05; if (min <= 5) return baseProb + 0.025; if (min <= 10) return baseProb + 0.02; if (min <= 30) return baseProb + 0.01; if (min <= 60) return baseProb + 0.005; }
+            return baseProb;
+        }
+
+        // =======================================================
+        // V0 게임 로직 (축약됨)
+        // =======================================================
+        let v0_userCash = 1000000, v0_userCubes = 0, v0_currentPrice = 100000, v0_transactions = [], v0_lastPrice = 100000, v0_isCubePurchased = false, v0_usedCodes = []; let v0_scene, v0_camera, v0_renderer, v0_cube, v0_cubeMaterial; let v0_chartInstance = null, v0_priceHistory = { labels: [], data: [] }; let v0_cashDisplay, v0_cubesDisplay, v0_priceDisplay, v0_priceChangeDisplay, v0_amountInput, v0_buyButton, v0_sellButton, v0_newsFeed, v0_transactionHistory, v0_notification, v0_buyCubeButton, v0_cubeOverlay, v0_canvasContainer, v0_codeInput, v0_codeSubmitButton;
+        function initV0Game() { v0_canvasContainer = document.getElementById('v0-canvas-container'); v0_cashDisplay = document.getElementById('v0-user-cash'); v0_cubesDisplay = document.getElementById('v0-user-cubes'); v0_priceDisplay = document.getElementById('v0-current-price'); v0_priceChangeDisplay = document.getElementById('v0-price-change'); v0_amountInput = document.getElementById('v0-amount-input'); v0_buyButton = document.getElementById('v0-buy-button'); v0_sellButton = document.getElementById('v0-sell-button'); v0_newsFeed = document.getElementById('v0-news-feed'); v0_transactionHistory = document.getElementById('v0-transaction-history'); v0_notification = document.getElementById('v0-notification'); v0_buyCubeButton = document.getElementById('v0-buy-cube-button'); v0_cubeOverlay = document.getElementById('v0-cube-purchase-overlay'); v0_codeInput = document.getElementById('v0-code-input'); v0_codeSubmitButton = document.getElementById('v0-code-submit-button'); v0_buyButton.addEventListener('click', v0_handleBuy); v0_sellButton.addEventListener('click', v0_handleSell); v0_buyCubeButton.addEventListener('click', v0_handleBuyCube); v0_codeSubmitButton.addEventListener('click', v0_handleCodeSubmit); document.getElementById('v0-logout-button').addEventListener('click', window.handleLogout); v0_initThree(); v0_initChart(); v0_updateUI(); v0_updateTransactionHistory(); if (v0_priceUpdateInterval) clearInterval(v0_priceUpdateInterval); v0_priceUpdateInterval = setInterval(v0_updatePrice, 3000); }
+        function v0_initThree() { v0_scene = new THREE.Scene(); v0_camera = new THREE.PerspectiveCamera(75, v0_canvasContainer.clientWidth / v0_canvasContainer.clientHeight, 0.1, 1000); v0_camera.position.z = 5; v0_renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); v0_renderer.setSize(v0_canvasContainer.clientWidth, v0_canvasContainer.clientHeight); v0_canvasContainer.prepend(v0_renderer.domElement); const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5); v0_cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x60a5fa, metalness: 0.5, roughness: 0.1 }); v0_cube = new THREE.Mesh(geometry, v0_cubeMaterial); v0_scene.add(v0_cube); v0_scene.add(new THREE.AmbientLight(0xffffff, 0.5)); const light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(5, 5, 5); v0_scene.add(light); v0_animate(); }
+        function v0_animate() { requestAnimationFrame(v0_animate); if (v0_isCubePurchased && v0_cube) { v0_cube.rotation.x += 0.005; v0_cube.rotation.y += 0.005; } if (v0_renderer) { v0_renderer.render(v0_scene, v0_camera); } }
+        function v0_initChart() { const ctx = document.getElementById('v0-price-chart').getContext('2d'); const gradient = ctx.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(96, 165, 250, 0.5)'); gradient.addColorStop(1, 'rgba(96, 165, 250, 0)'); v0_chartInstance = new Chart(ctx, { type: 'line', data: { labels: v0_priceHistory.labels, datasets: [{ data: v0_priceHistory.data, borderColor: '#60a5fa', backgroundColor: gradient, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { ticks: { color: '#9ca3af' } } }, plugins: { legend: { display: false } } } }); }
+        function v0_updateUI() { if (!v0_cashDisplay) return; v0_cashDisplay.textContent = v0_userCash.toLocaleString('ko-KR'); v0_cubesDisplay.textContent = v0_userCubes.toLocaleString('ko-KR'); v0_priceDisplay.textContent = `${v0_currentPrice.toLocaleString('ko-KR')} KRW`; const change = v0_currentPrice - v0_lastPrice; const pct = v0_lastPrice > 0 ? ((change / v0_lastPrice) * 100).toFixed(2) : 0; if (change > 0) v0_priceChangeDisplay.innerHTML = `<span class="text-green-500">▲ ${change.toLocaleString('ko-KR')} (+${pct}%)</span>`; else if (change < 0) v0_priceChangeDisplay.innerHTML = `<span class="text-red-500">▼ ${Math.abs(change).toLocaleString('ko-KR')} (${pct}%)</span>`; else v0_priceChangeDisplay.innerHTML = `0 (0.00%)`; }
+        function v0_updateTransactionHistory() { if (!v0_transactionHistory) return; if (v0_transactions.length === 0) { v0_transactionHistory.innerHTML = '<div class="text-gray-400 text-sm text-center p-4">...</div>'; return; } v0_transactionHistory.innerHTML = ''; v0_transactions.slice(-100).forEach(tx => { const el = document.createElement('div'); el.className = 'border-b border-gray-600 p-2 text-sm'; const typeClass = tx.type === '매수' ? 'text-green-400' : 'text-red-400'; el.innerHTML = `<div><span class="${typeClass} font-bold">[${tx.type}]</span> ${tx.amount.toLocaleString('ko-KR')} CUBE</div><div class="text-xs text-gray-400">@ ${tx.price.toLocaleString('ko-KR')} KRW</div>`; v0_transactionHistory.prepend(el); }); }
+        function v0_showNotification(message, isError = true) { v0_notification.textContent = message; v0_notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`; setTimeout(() => { v0_notification.classList.add('opacity-0', 'translate-y-10'); }, 3000); }
+        function v0_updatePrice() { v0_lastPrice = v0_currentPrice; const riseProb = getDynamicRiseProbability(0.55, getCurrentTime(), UPDATE_TIME); let dir = Math.random() < riseProb ? 1 : -1; let mag = Math.random(); let pct; if (mag < 0.6) pct = (Math.random() * 0.01) + 0.001; else if (mag < 0.9) pct = (Math.random() * 0.04) + 0.011; else pct = (Math.random() * 0.1) + 0.051; v0_currentPrice = Math.round(Math.max(1000, v0_currentPrice + (v0_currentPrice * pct * dir))); v0_updateUI(); }
+        function v0_handleBuy() { const amount = parseInt(v0_amountInput.value); if (!amount > 0) return; const cost = v0_currentPrice * amount; if (v0_userCash >= cost) { v0_userCash -= cost; v0_userCubes += amount; v0_transactions.push({ type: '매수', amount, price: v0_currentPrice }); v0_updateUI(); v0_updateTransactionHistory(); v0_showNotification(`${amount} CUBE 매수!`, false); v0_saveGameState(); } else v0_showNotification('현금 부족', true); }
+        function v0_handleSell() { const amount = parseInt(v0_amountInput.value); if (!amount > 0) return; if (v0_userCubes >= amount) { v0_userCash += v0_currentPrice * amount; v0_userCubes -= amount; v0_transactions.push({ type: '매도', amount, price: v0_currentPrice }); v0_updateUI(); v0_updateTransactionHistory(); v0_showNotification(`${amount} CUBE 매도!`, false); v0_saveGameState(); } else v0_showNotification('큐브 부족', true); }
+        function v0_handleCodeSubmit() { const code = v0_codeInput.value.trim(); if (code === '') return; if (v0_usedCodes.includes(code)) { v0_showNotification('이미 사용된 코드', true); return; } let used = false; if (code === 'v.0.2.2.preview') { v0_showNotification('v2로 전환합니다...', false); switchToV2(); return; } if (code === 'ice_v.0.2.2') { v0_showNotification('v2 (2분 전)으로 전환...', false); switchToV2('2025-11-14T17:58:00+09:00'); return; } if (code === 'Release') { v0_userCash += 50000; v0_showNotification('50,000 KRW 획득!', false); used = true; } else if (code === 'PRISM') { v0_userCash += 100000; v0_showNotification('v0 보상: 100,000 KRW!', false); used = true; } else if (code === 'ice_cube102') { v0_userCash += 1000000000000; v0_showNotification('1조 KRW 획득!', false); used = true; } else { v0_showNotification('유효하지 않은 코드', true); } if (used) { v0_usedCodes.push(code); v0_codeInput.value = ''; v0_updateUI(); v0_saveGameState(); } }
+        function v0_handleBuyCube() { if (v0_userCash >= 10000000) { v0_userCash -= 10000000; v0_isCubePurchased = true; v0_cubeOverlay.style.display = 'none'; v0_updateUI(); v0_showNotification('3D 큐브 활성화!', false); v0_saveGameState(); } else { v0_showNotification('1천만 KRW 필요', true); } }
+        function v0_saveGameState() { if (!db || !userId) return; const gameState = { userCash: v0_userCash, userCubes: v0_userCubes, transactions: v0_transactions, isCubePurchased: v0_isCubePurchased, usedCodes: v0_usedCodes }; if (window.setDoc) { const docRef = window.doc(db, "users", userId, "simulator_state", "game_data_v0"); window.setDoc(docRef, gameState); } }
+        function v0_loadGameState(docSnap) { if (docSnap.exists()) { const data = docSnap.data(); v0_userCash = data.userCash; v0_userCubes = data.userCubes; v0_transactions = data.transactions || []; v0_isCubePurchased = data.isCubePurchased; v0_usedCodes = data.usedCodes || []; } else { v0_saveGameState(); } v0_updateUI(); v0_updateTransactionHistory(); if (v0_isCubePurchased) v0_cubeOverlay.style.display = 'none'; }
+        
+        // =======================================================
+        // V2 게임 로직 (축약됨)
+        // =======================================================
+        let v2_userCash = 100000, v2_userCubes = 0, v2_userPrisms = 0, v2_currentPrice = 10000, v2_lastPrice = 10000, v2_currentPrismPrice = 50000, v2_lastPrismPrice = 50000, v2_transactions = [], v2_isCubePurchased = false, v2_isPrismUpgraded = false, v2_usedCodes = [], v2_paperClicks = 0; let v2_dom = {};
+        function initV2Game() { Object.assign(v2_dom, { canvasContainer: document.getElementById('v2-canvas-container'), cashDisplay: document.getElementById('v2-user-cash'), cubesDisplay: document.getElementById('v2-user-cubes'), prismsDisplay: document.getElementById('v2-user-prisms'), priceDisplay: document.getElementById('v2-current-price'), priceChangeDisplay: document.getElementById('v2-price-change'), prismPriceDisplay: document.getElementById('v2-current-prism-price'), prismPriceChangeDisplay: document.getElementById('v2-prism-price-change'), buyButtonCube: document.getElementById('v2-buy-button-cube'), sellButtonCube: document.getElementById('v2-sell-button-cube'), buyButtonPrism: document.getElementById('v2-buy-button-prism'), sellButtonPrism: document.getElementById('v2-sell-button-prism'), notification: document.getElementById('v2-notification'), buyCubeButton: document.getElementById('v2-buy-cube-button'), cubeOverlay: document.getElementById('v2-cube-purchase-overlay'), upgradePrismSection: document.getElementById('v2-upgrade-prism-section'), upgradePrismButton: document.getElementById('v2-upgrade-prism-button'), jobPaper: document.getElementById('v2-job-paper'), codeSubmitButton: document.getElementById('v2-code-submit-button'), passiveIncomeDisplay: document.getElementById('v2-passive-income-display'), incomePerSecond: document.getElementById('v2-income-per-second'), chartTabCube: document.getElementById('v2-chart-tab-cube'), chartTabPrism: document.getElementById('v2-chart-tab-prism'), chartCubeContainer: document.getElementById('v2-chart-cube-container'), chartPrismContainer: document.getElementById('v2-chart-prism-container'), transactionHistory: document.getElementById('v2-transaction-history'), newsFeed: document.getElementById('v2-news-feed'), codeInput: document.getElementById('v2-code-input') }); v2_dom.buyButtonCube.addEventListener('click', v2_handleBuyCube); v2_dom.sellButtonCube.addEventListener('click', v2_handleSellCube); v2_dom.buyButtonPrism.addEventListener('click', v2_handleBuyPrism); v2_dom.sellButtonPrism.addEventListener('click', v2_handleSellPrism); v2_dom.buyCubeButton.addEventListener('click', v2_handleBuy3DCube); v2_dom.upgradePrismButton.addEventListener('click', v2_handleUpgradePrism); v2_dom.jobPaper.addEventListener('click', v2_handleJobClick); v2_dom.codeSubmitButton.addEventListener('click', v2_handleCodeSubmit); document.getElementById('v2-logout-button').addEventListener('click', window.handleLogout); v2_dom.chartTabCube.addEventListener('click', () => { v2_dom.chartTabCube.classList.add('tab-active'); v2_dom.chartTabPrism.classList.remove('tab-active'); v2_dom.chartCubeContainer.classList.remove('hidden'); v2_dom.chartPrismContainer.classList.add('hidden'); }); v2_dom.chartTabPrism.addEventListener('click', () => { v2_dom.chartTabPrism.classList.add('tab-active'); v2_dom.chartTabCube.classList.remove('tab-active'); v2_dom.chartPrismContainer.classList.remove('hidden'); v2_dom.chartCubeContainer.classList.add('hidden'); }); ['assets', 'trade', 'charts', 'history', 'news', 'jobs', 'code', 'updates'].forEach(s => { const btn = document.getElementById(`v2-toggle-${s}`); if(btn) btn.addEventListener('click', () => { document.getElementById(`v2-content-${s}`).classList.toggle('hidden'); document.getElementById(`v2-toggle-${s}-icon`).classList.toggle('rotate-180'); }); }); initV2Three(); if (v2_gameLoopTimeout) clearTimeout(v2_gameLoopTimeout); v2_gameLoop(); }
+        function initV2Three() { v2_scene = new THREE.Scene(); v2_camera = new THREE.PerspectiveCamera(75, v2_dom.canvasContainer.clientWidth / v2_dom.canvasContainer.clientHeight, 0.1, 1000); v2_camera.position.z = 5; v2_renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); v2_renderer.setSize(v2_dom.canvasContainer.clientWidth, v2_dom.canvasContainer.clientHeight); v2_dom.canvasContainer.prepend(v2_renderer.domElement); const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5); v2_cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x60a5fa, metalness: 0.5, roughness: 0.1 }); v2_cube = new THREE.Mesh(geometry, v2_cubeMaterial); v2_scene.add(v2_cube); v2_scene.add(new THREE.AmbientLight(0xffffff, 0.7)); const light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(5, 5, 5); v2_scene.add(light); v2_animate(); }
+        function v2_animate() { requestAnimationFrame(v2_animate); if (v2_isCubePurchased) { v2_cube.rotation.x += 0.005; v2_cube.rotation.y += 0.005; } if (v2_renderer) v2_renderer.render(v2_scene, v2_camera); }
+        function v2_showNotification(message, isError = true) { v2_dom.notification.textContent = message; v2_dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`; setTimeout(() => { v2_dom.notification.classList.add('opacity-0', 'translate-y-10'); }, 3000); }
+        function v2_updateUI() { /* ... UI 업데이트 ... */ }
+        function v2_gameLoop() { /* ... 게임 루프 ... */ v2_gameLoopTimeout = setTimeout(v2_gameLoop, Math.random() * 5000 + 10000); }
+        function v2_handleBuyCube() { /* ... 매수 ... */ }
+        function v2_handleSellCube() { /* ... 매도 ... */ }
+        function v2_handleBuyPrism() { /* ... 매수 ... */ }
+        function v2_handleSellPrism() { /* ... 매도 ... */ }
+        function v2_handleCodeSubmit() { /* ... 코드 제출 ... */ }
+        function v2_handleJobClick() { /* ... 돈벌이 ... */ }
+        function v2_handleBuy3DCube() { /* ... 3D 큐브 구매 ... */ }
+        function v2_handleUpgradePrism() { /* ... 프리즘 업그레이드 ... */ }
+        function v2_saveGameState() { if (!db || !userId) return; const gameState = { /* ... 데이터 ... */ }; if (window.setDoc) { const docRef = window.doc(db, "users", userId, "simulator_state", "game_data_v2"); window.setDoc(docRef, gameState); } }
+        function v2_loadGameState(docSnap) { if (docSnap.exists()) { /* ... 데이터 로드 ... */ } else { v2_saveGameState(); } v2_updateUI(); }
+
+        // =======================================================
+        // 메인 로더 및 인증
+        // =======================================================
+        function switchToV2(devTime = null) {
+            if (v0_priceUpdateInterval) clearInterval(v0_priceUpdateInterval);
+            if (devTime) sessionStorage.setItem('devTime', devTime);
+            document.getElementById('v0-container').classList.add('hidden');
+            document.getElementById('v2-container').classList.remove('hidden');
+            initV2Game();
+            loadGameData(true);
+        }
+
+        async function loadGameData(isV2) {
+            if (!userId) return;
+            const docPath = isV2 ? "game_data_v2" : "game_data_v0";
+            const docRef = window.doc(db, "users", userId, "simulator_state", docPath);
+            const docSnap = await window.getDoc(docRef);
+            if (isV2) v2_loadGameState(docSnap);
+            else v0_loadGameState(docSnap);
+        }
+
+        function initFirebaseAndAuth() {
+            import("https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js").then(({ initializeApp }) =>
+            import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }) =>
+            import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js").then(({ getFirestore, doc, getDoc, setDoc }) => {
+                
+                window.doc = doc; window.getDoc = getDoc; window.setDoc = setDoc;
+                
+                // [!] 사용자님의 Firebase 설정이 여기에 적용되었습니다.
+                const firebaseConfig = {
+                    apiKey: "AIzaSyAMkZ-JoMxZEc2mXbIlZfhf_bVr-wLSHjo",
+                    authDomain: "cube-coin-simulator.firebaseapp.com",
+                    projectId: "cube-coin-simulator",
+                    storageBucket: "cube-coin-simulator.appspot.com",
+                    messagingSenderId: "734525632764",
+                    appId: "1:734525632764:web:ba9263fefeeca5726b6779",
+                    measurementId: "G-LD98Y6BZ3H"
+                };
+
+                const loginContainer = document.getElementById('login-container');
+                const v0Container = document.getElementById('v0-container');
+                const v2Container = document.getElementById('v2-container');
+                const loginErrorMessage = document.getElementById('login-error-message');
+
+                try {
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+
+                    const handleAuthError = (error) => {
+                        switch(error.code) {
+                            case 'auth/user-not-found': case 'auth/wrong-password': loginErrorMessage.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.'; break;
+                            case 'auth/email-already-in-use': loginErrorMessage.textContent = '이미 사용 중인 이메일입니다.'; break;
+                            case 'auth/weak-password': loginErrorMessage.textContent = '비밀번호는 6자 이상이어야 합니다.'; break;
+                            case 'auth/invalid-email': loginErrorMessage.textContent = '유효하지 않은 이메일 형식입니다.'; break;
+                            default: loginErrorMessage.textContent = '오류가 발생했습니다.';
+                        }
+                    };
+
+                    document.getElementById('login-button').addEventListener('click', async () => { const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value; if (!e || !p) return; try { loginErrorMessage.textContent = ''; await signInWithEmailAndPassword(auth, e, p); } catch (e) { handleAuthError(e); } });
+                    document.getElementById('signup-button').addEventListener('click', async () => { const e = document.getElementById('signup-email').value, p = document.getElementById('signup-password').value, c = document.getElementById('signup-password-confirm').value; if (!e || !p) return; if (p !== c) { loginErrorMessage.textContent = '비밀번호가 일치하지 않습니다.'; return; } try { loginErrorMessage.textContent = ''; await createUserWithEmailAndPassword(auth, e, p); } catch (e) { handleAuthError(e); } });
+                    window.handleLogout = async () => { await signOut(auth); };
+                    
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            loginContainer.classList.add('hidden');
+                            const now = getCurrentTime();
+                            if (now >= UPDATE_TIME) {
+                                v2Container.classList.remove('hidden'); initV2Game(); loadGameData(true);
+                                if (now < UPDATE_TIME.getTime() + 3600000) setTimeout(() => v2_showNotification("업데이트 기념! 코드 'PRISM'!", false), 2000);
+                            } else {
+                                v0Container.classList.remove('hidden'); initV0Game(); loadGameData(false);
+                                if (now >= COUNTDOWN_START_TIME) startCountdown();
+                            }
+                        } else {
+                            userId = null;
+                            if(v0_priceUpdateInterval) clearInterval(v0_priceUpdateInterval);
+                            if(v2_gameLoopTimeout) clearTimeout(v2_gameLoopTimeout);
+                            if(countdownInterval) clearInterval(countdownInterval);
+                            v0Container.classList.add('hidden');
+                            v2Container.classList.add('hidden');
+                            loginContainer.classList.remove('hidden');
+                        }
+                    });
+                } catch (e) { alert("Firebase 초기화 실패!"); }
+            })));
+        }
+
+        window.onload = () => {
+            const loginForm = document.getElementById('login-form'), signupForm = document.getElementById('signup-form');
+            document.getElementById('show-signup-form').addEventListener('click', (e) => { e.preventDefault(); loginForm.classList.add('hidden'); signupForm.classList.remove('hidden'); });
+            document.getElementById('show-login-form').addEventListener('click', (e) => { e.preventDefault(); signupForm.classList.add('hidden'); loginForm.classList.remove('hidden'); });
+            initFirebaseAndAuth();
+        };
+    </script>
+</body>
+</html>
