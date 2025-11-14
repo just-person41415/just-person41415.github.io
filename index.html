@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -72,58 +73,6 @@
         </div>
     </div>
 
-
-    <!-- 
-    ==========================================
-    업데이트 카운트다운 배너
-    ==========================================
-    -->
-    <div id="update-countdown-banner" class="fixed top-0 left-0 right-0 bg-yellow-100 border-b-2 border-yellow-300 p-3 text-center text-gray-900 z-40 hidden" style="background-color: #ffeedd; border-color: #ffc97e; color: #7a4a00;">
-        <div class="flex justify-between items-center max-w-6xl mx-auto px-4">
-            <span class="font-bold text-lg">
-                <span class="text-blue-600">v.0.2.2 프리즘 업데이트</span>가 잠시 후 시작됩니다!
-            </span>
-            <span id="countdown-timer" class="text-2xl font-bold text-red-600 bg-white px-3 py-1 rounded-lg shadow-inner">00:00:00</span>
-            <button id="hide-countdown-banner" class="bg-gray-700 hover:bg-gray-800 text-white text-sm py-1 px-3 rounded-lg">&times; 숨기기</button>
-        </div>
-    </div>
-
-    <!-- 
-    ==========================================
-    v0 (구 버전) 게임 컨테이너
-    ==========================================
-    -->
-    <div id="v0-container" class="hidden">
-        <div class="flex flex-col lg:flex-row w-full h-screen">
-            <!-- 왼쪽: 3D 뷰어 및 현재 가격 --><div id="v0-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black">
-                <!-- 3D 캔버스 --><div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20">
-                    <h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2>
-                    <div id="v0-current-price" class="text-4xl font-bold text-white">100,000 KRW</div>
-                    <div id="v0-price-change" class="text-lg font-medium text-gray-300">-</div>
-                </div>
-                <!-- 큐브 구매 오버레이 --><div id="v0-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10">
-                    <h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3>
-                    <p class="text-gray-300 mb-4">큐브의 실시간 3D 회전을 활성화하려면 10,000,000 KRW가 필요합니다.</p>
-                    <button id="v0-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">10,000,000 KRW에 구매</button>
-                </div>
-            </div>
-            <!-- 오른쪽: 대시보드 --><div class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto history-scrollbar">
-                <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터</h1>
-                <!-- 자산 현황 --><div class="grid grid-cols-2 gap-4">
-                    <div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-sm font-semibold text-gray-300">보유 현금 (KRW)</h3><div id="v0-user-cash" class="text-2xl font-bold text-blue-400">1,000,000</div></div>
-                    <div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-sm font-semibold text-gray-300">보유 큐브 (CUBE)</h3><div id="v0-user-cubes" class="text-2xl font-bold text-purple-400">0</div></div>
-                </div>
-                <!-- 매수/매도 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg"><label for="v0-amount-input" class="text-sm font-semibold text-gray-300">거래 수량 (CUBE)</label><input type="number" id="v0-amount-input" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0-buy-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold p-3 rounded-lg transition-colors shadow-lg">매수</button><button id="v0-sell-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded-lg transition-colors shadow-lg">매도</button></div></div>
-                <!-- 차트 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">실시간 차트</h3><div class="h-40"><canvas id="v0-price-chart"></canvas></div></div>
-                <!-- 뉴스 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg flex-grow flex flex-col"><h3 class="text-lg font-semibold mb-2 text-white">실시간 큐브 뉴스</h3><div id="v0-news-feed" class="flex-grow h-24 overflow-y-auto history-scrollbar pr-2"><div class="text-gray-400 text-sm">...</div></div></div>
-                <!-- 거래 내역 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg flex-grow flex flex-col"><h3 class="text-lg font-semibold mb-2 text-white">거래 내역</h3><div id="v0-transaction-history" class="flex-grow h-32 overflow-y-auto history-scrollbar pr-2"><div class="text-gray-400 text-sm text-center p-4">...</div></div></div>
-                <!-- 코드 입력 --><div class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">코드 입력</h3><div class="flex gap-4"><input type="text" id="v0-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v0-code-submit-button" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">입력</button></div></div>
-                <!-- 로그아웃 --><div id="v0-logout-section" class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">계정</h3><button id="v0-logout-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">로그아웃</button></div>
-            </div>
-        </div>
-        <div id="v0-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
-    </div>
-
     <!-- 
     ==========================================
     v2 (신 버전) 게임 컨테이너
@@ -160,82 +109,9 @@
     <script>
         // --- 전역 설정 ---
         let db, auth, userId;
-        let v0_priceUpdateInterval = null;
         let v2_gameLoopTimeout = null;
         let v2_cubePriceInterval = null;
         let v2_prismPriceInterval = null;
-        let countdownInterval = null;
-        const UPDATE_TIME = new Date('2025-11-14T18:00:00+09:00');
-        const COUNTDOWN_START_TIME = new Date('2025-11-14T13:00:00+09:00');
-        
-        function getCurrentTime() {
-            const devTimeStr = sessionStorage.getItem('devTime');
-            if (devTimeStr) { sessionStorage.removeItem('devTime'); return new Date(devTimeStr); }
-            return new Date();
-        }
-
-        function startCountdown() {
-            const banner = document.getElementById('update-countdown-banner');
-            const timerDisplay = document.getElementById('countdown-timer');
-            const hideButton = document.getElementById('hide-countdown-banner');
-
-            if (!banner || !timerDisplay || !hideButton) return;
-
-            banner.classList.remove('hidden');
-
-            hideButton.addEventListener('click', () => {
-                banner.classList.add('hidden');
-                if (countdownInterval) clearInterval(countdownInterval);
-            });
-
-            const updateTimer = () => {
-                const now = getCurrentTime();
-                const timeLeft = UPDATE_TIME.getTime() - now.getTime();
-
-                if (timeLeft <= 0) {
-                    timerDisplay.textContent = '00:00:00';
-                    if(countdownInterval) clearInterval(countdownInterval);
-                    banner.classList.add('hidden');
-                    return;
-                }
-
-                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft / 1000 / 60) % 60);
-                const seconds = Math.floor((timeLeft / 1000) % 60);
-
-                timerDisplay.textContent = 
-                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            };
-
-            if (countdownInterval) clearInterval(countdownInterval);
-            updateTimer(); // Initial call
-            countdownInterval = setInterval(updateTimer, 1000);
-        }
-
-        function getDynamicRiseProbability(baseProb, currentTime, updateTime) {
-            const ms = updateTime.getTime() - currentTime.getTime();
-            if (ms > 0) { const min = ms / 60000; if (min <= 1) return baseProb + 0.05; if (min <= 5) return baseProb + 0.025; if (min <= 10) return baseProb + 0.02; if (min <= 30) return baseProb + 0.01; if (min <= 60) return baseProb + 0.005; }
-            return baseProb;
-        }
-
-        // =======================================================
-        // V0 게임 로직
-        // =======================================================
-        let v0_userCash = 1000000, v0_userCubes = 0, v0_currentPrice = 100000, v0_transactions = [], v0_lastPrice = 100000, v0_isCubePurchased = false, v0_usedCodes = []; let v0_scene, v0_camera, v0_renderer, v0_cube, v0_cubeMaterial; let v0_chartInstance = null, v0_priceHistory = { labels: [], data: [] }; let v0_cashDisplay, v0_cubesDisplay, v0_priceDisplay, v0_priceChangeDisplay, v0_amountInput, v0_buyButton, v0_sellButton, v0_newsFeed, v0_transactionHistory, v0_notification, v0_buyCubeButton, v0_cubeOverlay, v0_canvasContainer, v0_codeInput, v0_codeSubmitButton;
-        function initV0Game() { v0_canvasContainer = document.getElementById('v0-canvas-container'); v0_cashDisplay = document.getElementById('v0-user-cash'); v0_cubesDisplay = document.getElementById('v0-user-cubes'); v0_priceDisplay = document.getElementById('v0-current-price'); v0_priceChangeDisplay = document.getElementById('v0-price-change'); v0_amountInput = document.getElementById('v0-amount-input'); v0_buyButton = document.getElementById('v0-buy-button'); v0_sellButton = document.getElementById('v0-sell-button'); v0_newsFeed = document.getElementById('v0-news-feed'); v0_transactionHistory = document.getElementById('v0-transaction-history'); v0_notification = document.getElementById('v0-notification'); v0_buyCubeButton = document.getElementById('v0-buy-cube-button'); v0_cubeOverlay = document.getElementById('v0-cube-purchase-overlay'); v0_codeInput = document.getElementById('v0-code-input'); v0_codeSubmitButton = document.getElementById('v0-code-submit-button'); v0_buyButton.addEventListener('click', v0_handleBuy); v0_sellButton.addEventListener('click', v0_handleSell); v0_buyCubeButton.addEventListener('click', v0_handleBuyCube); v0_codeSubmitButton.addEventListener('click', v0_handleCodeSubmit); document.getElementById('v0-logout-button').addEventListener('click', window.handleLogout); v0_initThree(); v0_initChart(); v0_updateUI(); v0_updateTransactionHistory(); if (v0_priceUpdateInterval) clearInterval(v0_priceUpdateInterval); v0_priceUpdateInterval = setInterval(v0_updatePrice, 3000); }
-        function v0_initThree() { v0_scene = new THREE.Scene(); v0_camera = new THREE.PerspectiveCamera(75, v0_canvasContainer.clientWidth / v0_canvasContainer.clientHeight, 0.1, 1000); v0_camera.position.z = 5; v0_renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); v0_renderer.setSize(v0_canvasContainer.clientWidth, v0_canvasContainer.clientHeight); v0_canvasContainer.prepend(v0_renderer.domElement); const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5); v0_cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x60a5fa, metalness: 0.5, roughness: 0.1 }); v0_cube = new THREE.Mesh(geometry, v0_cubeMaterial); v0_scene.add(v0_cube); v0_scene.add(new THREE.AmbientLight(0xffffff, 0.5)); const light = new THREE.DirectionalLight(0xffffff, 1); light.position.set(5, 5, 5); v0_scene.add(light); v0_animate(); }
-        function v0_animate() { requestAnimationFrame(v0_animate); if (v0_isCubePurchased && v0_cube) { v0_cube.rotation.x += 0.005; v0_cube.rotation.y += 0.005; } if (v0_renderer) { v0_renderer.render(v0_scene, v0_camera); } }
-        function v0_initChart() { const ctx = document.getElementById('v0-price-chart').getContext('2d'); const gradient = ctx.createLinearGradient(0, 0, 0, 400); gradient.addColorStop(0, 'rgba(96, 165, 250, 0.5)'); gradient.addColorStop(1, 'rgba(96, 165, 250, 0)'); v0_chartInstance = new Chart(ctx, { type: 'line', data: { labels: v0_priceHistory.labels, datasets: [{ data: v0_priceHistory.data, borderColor: '#60a5fa', backgroundColor: gradient, fill: true, tension: 0.4, pointRadius: 0 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { ticks: { color: '#9ca3af' } } }, plugins: { legend: { display: false } } } }); }
-        function v0_updateUI() { if (!v0_cashDisplay) return; v0_cashDisplay.textContent = v0_userCash.toLocaleString('ko-KR'); v0_cubesDisplay.textContent = v0_userCubes.toLocaleString('ko-KR'); v0_priceDisplay.textContent = `${v0_currentPrice.toLocaleString('ko-KR')} KRW`; const change = v0_currentPrice - v0_lastPrice; const pct = v0_lastPrice > 0 ? ((change / v0_lastPrice) * 100).toFixed(2) : 0; if (change > 0) v0_priceChangeDisplay.innerHTML = `<span class="text-green-500">▲ ${change.toLocaleString('ko-KR')} (+${pct}%)</span>`; else if (change < 0) v0_priceChangeDisplay.innerHTML = `<span class="text-red-500">▼ ${Math.abs(change).toLocaleString('ko-KR')} (${pct}%)</span>`; else v0_priceChangeDisplay.innerHTML = `0 (0.00%)`; }
-        function v0_updateTransactionHistory() { if (!v0_transactionHistory) return; if (v0_transactions.length === 0) { v0_transactionHistory.innerHTML = '<div class="text-gray-400 text-sm text-center p-4">...</div>'; return; } v0_transactionHistory.innerHTML = ''; v0_transactions.slice(-100).forEach(tx => { const el = document.createElement('div'); el.className = 'border-b border-gray-600 p-2 text-sm'; const typeClass = tx.type === '매수' ? 'text-green-400' : 'text-red-400'; el.innerHTML = `<div><span class="${typeClass} font-bold">[${tx.type}]</span> ${tx.amount.toLocaleString('ko-KR')} CUBE</div><div class="text-xs text-gray-400">@ ${tx.price.toLocaleString('ko-KR')} KRW</div>`; v0_transactionHistory.prepend(el); }); }
-        function v0_showNotification(message, isError = true) { v0_notification.textContent = message; v0_notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`; setTimeout(() => { v0_notification.classList.add('opacity-0', 'translate-y-10'); }, 3000); }
-        function v0_updatePrice() { v0_lastPrice = v0_currentPrice; const riseProb = getDynamicRiseProbability(0.55, getCurrentTime(), UPDATE_TIME); let dir = Math.random() < riseProb ? 1 : -1; let mag = Math.random(); let pct; if (mag < 0.6) pct = (Math.random() * 0.01) + 0.001; else if (mag < 0.9) pct = (Math.random() * 0.04) + 0.011; else pct = (Math.random() * 0.1) + 0.051; v0_currentPrice = Math.round(Math.max(1000, v0_currentPrice + (v0_currentPrice * pct * dir))); v0_updateUI(); }
-        function v0_handleBuy() { const amount = parseInt(v0_amountInput.value); if (!amount > 0) return; const cost = v0_currentPrice * amount; if (v0_userCash >= cost) { v0_userCash -= cost; v0_userCubes += amount; v0_transactions.push({ type: '매수', amount, price: v0_currentPrice }); v0_updateUI(); v0_updateTransactionHistory(); v0_showNotification(`${amount} CUBE 매수!`, false); v0_saveGameState(); } else v0_showNotification('현금 부족', true); }
-        function v0_handleSell() { const amount = parseInt(v0_amountInput.value); if (!amount > 0) return; if (v0_userCubes >= amount) { v0_userCash += v0_currentPrice * amount; v0_userCubes -= amount; v0_transactions.push({ type: '매도', amount, price: v0_currentPrice }); v0_updateUI(); v0_updateTransactionHistory(); v0_showNotification(`${amount} CUBE 매도!`, false); v0_saveGameState(); } else v0_showNotification('큐브 부족', true); }
-        function v0_handleCodeSubmit() { const code = v0_codeInput.value.trim(); if (code === '') return; if (v0_usedCodes.includes(code)) { v0_showNotification('이미 사용된 코드', true); return; } let used = false; if (code === 'v.0.2.2.preview') { v0_showNotification('v2로 전환합니다...', false); switchToV2(); return; } if (code === 'ice_v.0.2.2') { v0_showNotification('v2 (2분 전)으로 전환...', false); switchToV2('2025-11-14T17:58:00+09:00'); return; } if (code === 'Release') { v0_userCash += 50000; v0_showNotification('50,000 KRW 획득!', false); used = true; } else if (code === 'PRISM') { v0_userCash += 100000; v0_showNotification('v0 보상: 100,000 KRW!', false); used = true; } else if (code === 'ice_cube102') { v0_userCash += 1000000000000; v0_showNotification('1조 KRW 획득!', false); used = true; } else { v0_showNotification('유효하지 않은 코드', true); } if (used) { v0_usedCodes.push(code); v0_codeInput.value = ''; v0_updateUI(); v0_saveGameState(); } }
-        function v0_handleBuyCube() { if (v0_userCash >= 10000000) { v0_userCash -= 10000000; v0_isCubePurchased = true; v0_cubeOverlay.style.display = 'none'; v0_updateUI(); v0_showNotification('3D 큐브 활성화!', false); v0_saveGameState(); } else { v0_showNotification('1천만 KRW 필요', true); } }
-        function v0_saveGameState() { if (!db || !userId) return; const gameState = { userCash: v0_userCash, userCubes: v0_userCubes, transactions: v0_transactions, isCubePurchased: v0_isCubePurchased, usedCodes: v0_usedCodes }; if (window.setDoc) { const docRef = window.doc(db, "users", userId, "simulator_state", "game_data_v0"); window.setDoc(docRef, gameState); } }
-        function v0_loadGameState(docSnap) { if (docSnap.exists()) { const data = docSnap.data(); v0_userCash = data.userCash; v0_userCubes = data.userCubes; v0_transactions = data.transactions || []; v0_isCubePurchased = data.isCubePurchased; v0_usedCodes = data.usedCodes || []; } else { v0_saveGameState(); } v0_updateUI(); v0_updateTransactionHistory(); if (v0_isCubePurchased) v0_cubeOverlay.style.display = 'none'; }
         
         // =======================================================
         // V2 게임 로직
@@ -255,44 +131,77 @@
         function v2_showNotification(message, isError = true) { v2_dom.notification.textContent = message; v2_dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`; setTimeout(() => { v2_dom.notification.classList.add('opacity-0', 'translate-y-10'); }, 3000); }
         function v2_updateUI() { if (!v2_dom.cashDisplay) return; v2_dom.cashDisplay.textContent = Math.floor(v2_userCash).toLocaleString('ko-KR'); v2_dom.cubesDisplay.textContent = v2_userCubes.toLocaleString('ko-KR'); v2_dom.prismsDisplay.textContent = v2_userPrisms.toLocaleString('ko-KR'); v2_dom.priceDisplay.textContent = `${v2_currentPrice.toLocaleString('ko-KR')} KRW`; const change = v2_currentPrice - v2_lastPrice; const pct = v2_lastPrice > 0 ? ((change / v2_lastPrice) * 100).toFixed(2) : 0; if (change > 0) v2_dom.priceChangeDisplay.innerHTML = `<span class="text-green-500">▲ ${change.toLocaleString('ko-KR')} (+${pct}%)</span>`; else if (change < 0) v2_dom.priceChangeDisplay.innerHTML = `<span class="text-red-500">▼ ${Math.abs(change).toLocaleString('ko-KR')} (${pct}%)</span>`; else v2_dom.priceChangeDisplay.innerHTML = `0 (0.00%)`; v2_dom.prismPriceDisplay.textContent = `${v2_currentPrismPrice.toLocaleString('ko-KR')} KRW`; const prismChange = v2_currentPrismPrice - v2_lastPrismPrice; const prismPct = v2_lastPrismPrice > 0 ? ((prismChange / v2_lastPrismPrice) * 100).toFixed(2) : 0; if (prismChange > 0) v2_dom.prismPriceChangeDisplay.innerHTML = `<span class="text-green-500">▲ ${prismChange.toLocaleString('ko-KR')} (+${prismPct}%)</span>`; else if (prismChange < 0) v2_dom.prismPriceChangeDisplay.innerHTML = `<span class="text-red-500">▼ ${Math.abs(prismChange).toLocaleString('ko-KR')} (${prismPct}%)</span>`; else v2_dom.prismPriceChangeDisplay.innerHTML = `0 (0.00%)`; const incomePerSec = (v2_isCubePurchased ? 100 : 0) + (v2_isPrismUpgraded ? 900 : 0); v2_dom.incomePerSecond.textContent = `+${incomePerSec.toLocaleString('ko-KR')} KRW / sec`; v2_updateTransactionHistory(); }
         function v2_updateTransactionHistory() { if (!v2_dom.transactionHistory) return; if (v2_transactions.length === 0) { v2_dom.transactionHistory.innerHTML = '<div class="text-gray-400 text-sm text-center p-4">...</div>'; return; } v2_dom.transactionHistory.innerHTML = ''; v2_transactions.slice(-100).forEach(tx => { const el = document.createElement('div'); el.className = 'border-b border-gray-600 p-2 text-sm'; let typeClass, coin; if (tx.coin === 'CUBE') { typeClass = tx.type === '매수' ? 'text-green-400' : 'text-red-400'; coin = 'CUBE'; } else { typeClass = tx.type === '매수' ? 'text-green-400' : 'text-red-400'; coin = 'PRISM'; } el.innerHTML = `<div><span class="${typeClass} font-bold">[${tx.type}]</span> ${tx.amount.toLocaleString('ko-KR')} ${coin}</div><div class="text-xs text-gray-400">@ ${tx.price.toLocaleString('ko-KR')} KRW</div>`; v2_dom.transactionHistory.prepend(el); }); }
-        function v2_updateCubePrice() { v2_lastPrice = v2_currentPrice; const riseProb = getDynamicRiseProbability(0.51, getCurrentTime(), UPDATE_TIME); let dir = Math.random() < riseProb ? 1 : -1; let mag = Math.random(); let pct; if (mag < 0.7) pct = (Math.random() * 0.02) + 0.001; else if (mag < 0.95) pct = (Math.random() * 0.05) + 0.021; else pct = (Math.random() * 0.12) + 0.051; v2_currentPrice = Math.round(Math.max(1000, v2_currentPrice + (v2_currentPrice * pct * dir))); }
+        function v2_updateCubePrice() { v2_lastPrice = v2_currentPrice; const riseProb = 0.51; let dir = Math.random() < riseProb ? 1 : -1; let mag = Math.random(); let pct; if (mag < 0.7) pct = (Math.random() * 0.02) + 0.001; else if (mag < 0.95) pct = (Math.random() * 0.05) + 0.021; else pct = (Math.random() * 0.12) + 0.051; v2_currentPrice = Math.round(Math.max(1000, v2_currentPrice + (v2_currentPrice * pct * dir))); }
         function v2_updatePrismPrice() { v2_lastPrismPrice = v2_currentPrismPrice; let prismDir = Math.random() < 0.53 ? 1 : -1; let prismMag = Math.random(); let prismPct; if (prismMag < 0.6) prismPct = (Math.random() * 0.03) + 0.005; else if (prismMag < 0.9) prismPct = (Math.random() * 0.08) + 0.031; else prismPct = (Math.random() * 0.15) + 0.081; v2_currentPrismPrice = Math.round(Math.max(5000, v2_currentPrismPrice + (v2_currentPrismPrice * prismPct * prismDir))); }
         function v2_gameLoop() { const now = Date.now(); if (v2_isCubePurchased) { v2_userCash += (100 + (v2_isPrismUpgraded ? 900 : 0)) / 2; } Object.keys(v2_jobTimers).forEach(job => { if (v2_jobTimers[job] > now) { const timeLeft = Math.ceil((v2_jobTimers[job] - now) / 1000); if (v2_dom[`${job}Timer`]) v2_dom[`${job}Timer`].textContent = `(${timeLeft}초)`; v2_dom[job].classList.add('btn-disabled'); } else if(v2_dom[job]) { v2_dom[job].classList.remove('btn-disabled'); if (v2_dom[`${job}Timer`]) v2_dom[`${job}Timer`].textContent = ''; } }); v2_updateUI(); v2_gameLoopTimeout = setTimeout(v2_gameLoop, 500); }
-        function v2_handleBuyCube() { const amount = parseInt(v2_dom.amountInputCube.value); if (!(amount > 0)) return; const cost = v2_currentPrice * amount; if (v2_userCash >= cost) { v2_userCash -= cost; v2_userCubes += amount; v2_transactions.push({ type: '매수', coin: 'CUBE', amount, price: v2_currentPrice }); v2_updateUI(); v2_showNotification(`${amount} CUBE 매수!`, false); v2_saveGameState(); } else v2_showNotification('현금 부족', true); }
-        function v2_handleSellCube() { const amount = parseInt(v2_dom.amountInputCube.value); if (!(amount > 0)) return; if (v2_userCubes >= amount) { v2_userCash += v2_currentPrice * amount; v2_userCubes -= amount; v2_transactions.push({ type: '매도', coin: 'CUBE', amount, price: v2_currentPrice }); v2_updateUI(); v2_showNotification(`${amount} CUBE 매도!`, false); v2_saveGameState(); } else v2_showNotification('CUBE 부족', true); }
-        function v2_handleBuyPrism() { const amount = parseInt(v2_dom.amountInputPrism.value); if (!(amount > 0)) return; const cost = v2_currentPrismPrice * amount; if (v2_userCash >= cost) { v2_userCash -= cost; v2_userPrisms += amount; v2_transactions.push({ type: '매수', coin: 'PRISM', amount, price: v2_currentPrismPrice }); v2_updateUI(); v2_showNotification(`${amount} PRISM 매수!`, false); v2_saveGameState(); } else v2_showNotification('현금 부족', true); }
-        function v2_handleSellPrism() { const amount = parseInt(v2_dom.amountInputPrism.value); if (!(amount > 0)) return; if (v2_userPrisms >= amount) { v2_userCash += v2_currentPrismPrice * amount; v2_userPrisms -= amount; v2_transactions.push({ type: '매도', coin: 'PRISM', amount, price: v2_currentPrismPrice }); v2_updateUI(); v2_showNotification(`${amount} PRISM 매도!`, false); v2_saveGameState(); } else v2_showNotification('PRISM 부족', true); }
-        function v2_handleCodeSubmit() { const code = v2_dom.codeInput.value.trim(); if (code === '') return; if (v2_usedCodes.includes(code)) { v2_showNotification('이미 사용된 코드', true); return; } let used = false; if (code === 'PRISM') { v2_userCash += 200000; v2_showNotification("v2 업데이트 보상: 200,000 KRW!", false); used = true; } else { v2_showNotification('유효하지 않은 코드', true); } if (used) { v2_usedCodes.push(code); v2_dom.codeInput.value = ''; v2_updateUI(); v2_saveGameState(); } }
-        function v2_handleJobClick(e) { const id = e.target.id.split('-')[2]; const now = Date.now(); if (v2_jobTimers[id] > now) { v2_showNotification('아직 쿨타임입니다.', true); return; } if (id === 'paper') { v2_userCash += 500; v2_paperClicks++; v2_showNotification('폐지 줍기 완료! (+500 KRW)', false); v2_jobTimers.paper = now + 5000; } v2_updateUI(); v2_saveGameState(); }
-        function v2_handleBuy3DCube() { if (v2_userCash >= 10000000) { v2_userCash -= 10000000; v2_isCubePurchased = true; v2_dom.cubeOverlay.style.display = 'none'; v2_dom.passiveIncomeDisplay.classList.remove('hidden'); v2_dom.upgradePrismSection.classList.remove('hidden'); v2_updateUI(); v2_showNotification('3D 큐브 활성화! 패시브 수입 시작!', false); v2_saveGameState(); } else v2_showNotification('1천만 KRW 필요', true); }
-        function v2_handleUpgradePrism() { if (!v2_isPrismUpgraded && v2_userPrisms >= 100) { v2_userPrisms -= 100; v2_isPrismUpgraded = true; v2_dom.upgradePrismSection.style.display = 'none'; v2_cubeMaterial.color.set(0xf472b6); v2_cubeMaterial.emissive.set(0xf472b6); v2_cubeMaterial.emissiveIntensity = 0.3; v2_updateUI(); v2_showNotification('프리즘 업그레이드 완료!', false); v2_saveGameState(); } else v2_showNotification('100 PRISM 필요', true); }
-        function v2_saveGameState() { if (!db || !userId) return; const gameState = { userCash: v2_userCash, userCubes: v2_userCubes, userPrisms: v2_userPrisms, transactions: v2_transactions, isCubePurchased: v2_isCubePurchased, isPrismUpgraded: v2_isPrismUpgraded, usedCodes: v2_usedCodes, paperClicks: v2_paperClicks }; if (window.setDoc) { const docRef = window.doc(db, "users", userId, "simulator_state", "game_data_v2"); window.setDoc(docRef, gameState).catch(e => console.error("Error saving game state: ", e)); } }
-        function v2_loadGameState(docSnap) { if (docSnap.exists()) { const data = docSnap.data(); v2_userCash = data.userCash || 100000; v2_userCubes = data.userCubes || 0; v2_userPrisms = data.userPrisms || 0; v2_transactions = data.transactions || []; v2_isCubePurchased = data.isCubePurchased || false; v2_isPrismUpgraded = data.isPrismUpgraded || false; v2_usedCodes = data.usedCodes || []; v2_paperClicks = data.paperClicks || 0; } else { v2_saveGameState(); } v2_updateUI(); if (v2_isCubePurchased) { v2_dom.cubeOverlay.style.display = 'none'; v2_dom.passiveIncomeDisplay.classList.remove('hidden'); v2_dom.upgradePrismSection.classList.remove('hidden'); } if (v2_isPrismUpgraded) { v2_dom.upgradePrismSection.style.display = 'none'; v2_cubeMaterial.color.set(0xf472b6); v2_cubeMaterial.emissive.set(0xf472b6); v2_cubeMaterial.emissiveIntensity = 0.3; } }
+        function v2_handleBuyCube() { const amount = parseInt(v2_dom.amountInputCube.value); if (!(amount > 0)) return; const cost = v2_currentPrice * amount; if (v2_userCash >= cost) { v2_userCash -= cost; v2_userCubes += amount; v2_transactions.push({ type: '매수', coin: 'CUBE', amount, price: v2_currentPrice }); v2_updateUI(); v2_showNotification(`${amount} CUBE 매수!`, false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('현금 부족', true); }
+        function v2_handleSellCube() { const amount = parseInt(v2_dom.amountInputCube.value); if (!(amount > 0)) return; if (v2_userCubes >= amount) { v2_userCash += v2_currentPrice * amount; v2_userCubes -= amount; v2_transactions.push({ type: '매도', coin: 'CUBE', amount, price: v2_currentPrice }); v2_updateUI(); v2_showNotification(`${amount} CUBE 매도!`, false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('CUBE 부족', true); }
+        function v2_handleBuyPrism() { const amount = parseInt(v2_dom.amountInputPrism.value); if (!(amount > 0)) return; const cost = v2_currentPrismPrice * amount; if (v2_userCash >= cost) { v2_userCash -= cost; v2_userPrisms += amount; v2_transactions.push({ type: '매수', coin: 'PRISM', amount, price: v2_currentPrismPrice }); v2_updateUI(); v2_showNotification(`${amount} PRISM 매수!`, false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('현금 부족', true); }
+        function v2_handleSellPrism() { const amount = parseInt(v2_dom.amountInputPrism.value); if (!(amount > 0)) return; if (v2_userPrisms >= amount) { v2_userCash += v2_currentPrismPrice * amount; v2_userPrisms -= amount; v2_transactions.push({ type: '매도', coin: 'PRISM', amount, price: v2_currentPrismPrice }); v2_updateUI(); v2_showNotification(`${amount} PRISM 매도!`, false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('PRISM 부족', true); }
+        function v2_handleCodeSubmit() { const code = v2_dom.codeInput.value.trim(); if (code === '') return; if (v2_usedCodes.includes(code)) { v2_showNotification('이미 사용된 코드', true); return; } let used = false; if (code === 'PRISM') { v2_userCash += 200000; v2_showNotification("v2 업데이트 보상: 200,000 KRW!", false); used = true; } else { v2_showNotification('유효하지 않은 코드', true); } if (used) { v2_usedCodes.push(code); v2_dom.codeInput.value = ''; v2_updateUI(); v2_saveGameState().catch(e => console.error("Save failed:", e)); } }
+        function v2_handleJobClick(e) { const id = e.target.id.split('-')[2]; const now = Date.now(); if (v2_jobTimers[id] > now) { v2_showNotification('아직 쿨타임입니다.', true); return; } if (id === 'paper') { v2_userCash += 500; v2_paperClicks++; v2_showNotification('폐지 줍기 완료! (+500 KRW)', false); v2_jobTimers.paper = now + 5000; } v2_updateUI(); v2_saveGameState().catch(e => console.error("Save failed:", e)); }
+        function v2_handleBuy3DCube() { if (v2_userCash >= 10000000) { v2_userCash -= 10000000; v2_isCubePurchased = true; v2_dom.cubeOverlay.style.display = 'none'; v2_dom.passiveIncomeDisplay.classList.remove('hidden'); v2_dom.upgradePrismSection.classList.remove('hidden'); v2_updateUI(); v2_showNotification('3D 큐브 활성화! 패시브 수입 시작!', false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('1천만 KRW 필요', true); }
+        function v2_handleUpgradePrism() { if (!v2_isPrismUpgraded && v2_userPrisms >= 100) { v2_userPrisms -= 100; v2_isPrismUpgraded = true; v2_dom.upgradePrismSection.style.display = 'none'; v2_cubeMaterial.color.set(0xf472b6); v2_cubeMaterial.emissive.set(0xf472b6); v2_cubeMaterial.emissiveIntensity = 0.3; v2_updateUI(); v2_showNotification('프리즘 업그레이드 완료!', false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('100 PRISM 필요', true); }
+        
+        function v2_saveGameState() {
+            if (!db || !userId) {
+                console.warn("Save skipped: no db or userId");
+                return Promise.resolve();
+            }
+            const gameState = { userCash: v2_userCash, userCubes: v2_userCubes, userPrisms: v2_userPrisms, transactions: v2_transactions, isCubePurchased: v2_isCubePurchased, isPrismUpgraded: v2_isPrismUpgraded, usedCodes: v2_usedCodes, paperClicks: v2_paperClicks };
+            if (window.setDoc) {
+                console.log("Attempting to save game state for user:", userId);
+                const docRef = window.doc(db, "users", userId, "simulator_state", "game_data_v2");
+                return window.setDoc(docRef, gameState);
+            } else {
+                 console.warn("Save skipped: setDoc not available");
+                 return Promise.resolve();
+            }
+        }
+
+        function v2_loadGameState(docSnap) {
+            if (docSnap.exists()) {
+                console.log("Loading saved game state for user:", userId);
+                const data = docSnap.data();
+                v2_userCash = data.userCash ?? 100000;
+                v2_userCubes = data.userCubes ?? 0;
+                v2_userPrisms = data.userPrisms ?? 0;
+                v2_transactions = data.transactions ?? [];
+                v2_isCubePurchased = data.isCubePurchased ?? false;
+                v2_isPrismUpgraded = data.isPrismUpgraded ?? false;
+                v2_usedCodes = data.usedCodes ?? [];
+                v2_paperClicks = data.paperClicks ?? 0;
+            } else {
+                console.log("No saved data found, initializing new game state for user:", userId);
+                v2_saveGameState().catch(e => console.error("Error saving initial game state:", e));
+            }
+            v2_updateUI();
+            if (v2_isCubePurchased) {
+                v2_dom.cubeOverlay.style.display = 'none';
+                v2_dom.passiveIncomeDisplay.classList.remove('hidden');
+                v2_dom.upgradePrismSection.classList.remove('hidden');
+            }
+            if (v2_isPrismUpgraded) {
+                v2_dom.upgradePrismSection.style.display = 'none';
+                v2_cubeMaterial.color.set(0xf472b6);
+                v2_cubeMaterial.emissive.set(0xf472b6);
+                v2_cubeMaterial.emissiveIntensity = 0.3;
+            }
+        }
 
         // =======================================================
         // 메인 로더 및 인증
         // =======================================================
-        function switchToV2(devTime = null) {
-            if (v0_priceUpdateInterval) clearInterval(v0_priceUpdateInterval);
-            if (devTime) sessionStorage.setItem('devTime', devTime);
-            document.getElementById('v0-container').classList.add('hidden');
-            document.getElementById('v2-container').classList.remove('hidden');
-            initV2Game();
-            loadGameData(true);
-        }
-
-        async function loadGameData(isV2) {
+        async function loadGameData() {
             if (!userId) return;
-            const docPath = isV2 ? "game_data_v2" : "game_data_v0";
-            const docRef = window.doc(db, "users", userId, "simulator_state", docPath);
+            const docRef = window.doc(db, "users", userId, "simulator_state", "game_data_v2");
             const docSnap = await window.getDoc(docRef);
-            if (isV2) v2_loadGameState(docSnap);
-            else v0_loadGameState(docSnap);
+            v2_loadGameState(docSnap);
         }
 
         function initFirebaseAndAuth() {
             import("https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js").then(({ initializeApp }) =>
-            import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }) =>
+            import("https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, setPersistence, inMemoryPersistence }) =>
             import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js").then(({ getFirestore, doc, getDoc, setDoc }) => {
                 
                 window.doc = doc; window.getDoc = getDoc; window.setDoc = setDoc;
@@ -309,7 +218,6 @@
                 };
 
                 const loginContainer = document.getElementById('login-container');
-                const v0Container = document.getElementById('v0-container');
                 const v2Container = document.getElementById('v2-container');
                 const loginErrorMessage = document.getElementById('login-error-message');
 
@@ -317,6 +225,10 @@
                     const app = initializeApp(firebaseConfig);
                     auth = getAuth(app);
                     db = getFirestore(app);
+
+                    // 세션 지속성을 'none'으로 설정하여 자동 로그인을 비활성화합니다.
+                    // 이렇게 하면 사용자는 페이지를 새로고침하거나 다시 방문할 때마다 로그인해야 합니다.
+                    setPersistence(auth, inMemoryPersistence);
 
                     const handleAuthError = (error) => {
                         switch(error.code) {
@@ -332,9 +244,14 @@
                     document.getElementById('signup-button').addEventListener('click', async () => { const e = document.getElementById('signup-email').value, p = document.getElementById('signup-password').value, c = document.getElementById('signup-password-confirm').value; if (!e || !p) return; if (p !== c) { loginErrorMessage.textContent = '비밀번호가 일치하지 않습니다.'; return; } try { loginErrorMessage.textContent = ''; await createUserWithEmailAndPassword(auth, e, p); } catch (e) { handleAuthError(e); } });
                     
                     window.handleLogout = async () => {
-                        if (userId) {
-                           if (!v0Container.classList.contains('hidden')) v0_saveGameState();
-                           if (!v2Container.classList.contains('hidden')) v2_saveGameState();
+                        if (userId && !v2Container.classList.contains('hidden')) {
+                           try {
+                                await v2_saveGameState();
+                                console.log("Game state saved successfully before logout.");
+                           } catch (error) {
+                                console.error("Failed to save game state before logout:", error);
+                                // 저장에 실패하더라도 로그아웃은 진행합니다.
+                           }
                         }
                         await signOut(auth);
                     };
@@ -343,22 +260,14 @@
                         if (user) {
                             userId = user.uid;
                             loginContainer.classList.add('hidden');
-                            const now = getCurrentTime();
-                            if (now >= UPDATE_TIME) {
-                                v2Container.classList.remove('hidden'); initV2Game(); loadGameData(true);
-                                if (now < UPDATE_TIME.getTime() + 3600000) setTimeout(() => v2_showNotification("업데이트 기념! 코드 'PRISM'!", false), 2000);
-                            } else {
-                                v0Container.classList.remove('hidden'); initV0Game(); loadGameData(false);
-                                if (now >= COUNTDOWN_START_TIME) startCountdown();
-                            }
+                            v2Container.classList.remove('hidden');
+                            initV2Game();
+                            loadGameData();
                         } else {
                             userId = null;
-                            if(v0_priceUpdateInterval) clearInterval(v0_priceUpdateInterval);
                             if(v2_gameLoopTimeout) clearTimeout(v2_gameLoopTimeout);
                             if(v2_cubePriceInterval) clearInterval(v2_cubePriceInterval);
                             if(v2_prismPriceInterval) clearInterval(v2_prismPriceInterval);
-                            if(countdownInterval) clearInterval(countdownInterval);
-                            v0Container.classList.add('hidden');
                             v2Container.classList.add('hidden');
                             loginContainer.classList.remove('hidden');
                         }
