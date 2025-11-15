@@ -95,7 +95,7 @@
                 <div class="absolute bottom-4 left-4 flex flex-col md:flex-row gap-4 items-start md:items-end z-20">
                     <div id="v2-passive-income-display" class="bg-black/50 backdrop-blur-sm p-3 rounded-lg shadow-xl hidden"><h3 class="text-sm font-semibold text-green-300">패시브 수입</h3><div id="v2-income-per-second" class="text-lg font-bold text-white">+0 KRW / sec</div></div>
                     <div id="v2-upgrade-prism-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-pink-300">프리즘 업그레이드</h3><p class="text-gray-300 text-sm mb-3">큐브를 프리즘으로 업그레이드<br>(필요: 100 PRISM)</p><button id="v2-upgrade-prism-button" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg">100 PRISM에 업그레이드</button></div>
-                    <div id="v2-upgrade-lunar-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-yellow-300">달빛 강화</h3><p class="text-gray-300 text-sm mb-3">큐브에 달의 힘을 부여합니다.</p><button id="v2-upgrade-lunar-blessing-button" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg mb-2">Lunar Blessing (200 LUNAR)</button><button id="v2-buy-lunar-skin-button" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Lunar Cube 스킨 (500 LUNAR)</button></div>
+                    <div id="v2-upgrade-lunar-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-yellow-300">달빛 강화</h3><p class="text-gray-300 text-sm mb-3">큐브에 달의 힘을 부여합니다.</p><button id="v2-upgrade-lunar-blessing-button" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg">Lunar Blessing (200 LUNAR)</button></div>
                 </div>
                 <div id="v2-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10"><div id="v2-buy-cube-section"><h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3><p class="text-gray-300 mb-4">큐브를 활성화하고 초당 100 KRW를 생산하려면 1,000,000 KRW가 필요합니다.</p><button id="v2-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">1,000,000 KRW에 구매</button></div></div>
             </div>
@@ -106,8 +106,25 @@
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-charts"><h3 class="text-lg font-semibold text-white">실시간 차트</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-charts" class="px-4 pb-4"><nav class="flex border-b border-gray-600 mb-4"><button id="v2-chart-tab-cube" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white tab-active">CUBE</button><button id="v2-chart-tab-prism" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">PRISM</button><button id="v2-chart-tab-lunar" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white hidden">LUNAR</button></nav><div id="v2-chart-cube-container" class="h-40"><canvas id="v2-price-chart"></canvas></div><div id="v2-chart-prism-container" class="h-40 hidden"><canvas id="v2-prism-price-chart"></canvas></div><div id="v2-chart-lunar-container" class="h-40 hidden"><canvas id="v2-lunar-price-chart"></canvas></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-history"><h3 class="text-lg font-semibold text-white">거래 내역</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-history-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-history" class="px-4 pb-4"><div id="v2-transaction-history" class="h-32 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-news"><h3 class="text-lg font-semibold text-white">실시간 뉴스 (예측)</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-news-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-news" class="px-4 pb-4"><div id="v2-news-feed" class="h-24 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-jobs"><h3 class="text-lg font-semibold text-white">다양한 돈벌이</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-jobs-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-jobs" class="px-4 pb-4"><div class="grid grid-cols-1 gap-4"><button id="v2-job-paper" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold p-3 rounded-lg">폐지 줍기 (+500)<span id="v2-job-paper-timer" class="text-xs block"></span></button><button id="v2-job-starcatching" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg hidden">밤하늘에 별 따기<span id="v2-job-starcatching-timer" class="text-xs block"></span></button></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-jobs"><h3 class="text-lg font-semibold text-white">다양한 돈벌이</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-jobs-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-jobs" class="px-4 pb-4"><div class="grid grid-cols-1 gap-4"><button id="v2-job-paper" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold p-3 rounded-lg"><span id="v2-job-paper-text">폐지 줍기 (+500)</span><span id="v2-job-paper-timer" class="text-sm ml-2"></span></button><button id="v2-job-starcatching" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg hidden">밤하늘에 별 따기<span id="v2-job-starcatching-timer" class="text-sm ml-2"></span></button></div></div></div>
                 <div id="v2-sleep-section" class="bg-gray-700 rounded-lg shadow-lg hidden"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-sleep"><h3 class="text-lg font-semibold text-white">수면</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-sleep-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-sleep" class="px-4 pb-4 hidden"><div class="flex items-center gap-4"><p class="text-gray-300 text-sm flex-grow">밤에 잠을 자서 아침 8시까지 시간을 건너뜁니다.</p><button id="v2-sleep-button" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg btn-disabled">수면</button></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-trophies">
+                        <h3 class="text-lg font-semibold text-white">이벤트 트로피</h3>
+                        <svg class="w-5 h-5 text-gray-400" id="v2-toggle-trophies-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div id="v2-content-trophies" class="px-4 pb-4 hidden">
+                        <div id="v2-trophy-list" class="space-y-3 mb-4">
+                            <!-- JS will populate this -->
+                        </div>
+                        <div class="border-t border-gray-600 pt-3">
+                            <h4 class="text-md font-semibold text-blue-300 mb-2">총 효과</h4>
+                            <div id="v2-trophy-effects" class="text-sm text-gray-300">
+                                <!-- JS will populate this -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="v2-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v2-code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v2-toggle-updates"><h3 class="text-lg font-semibold text-white">업데이트 내역 <span id="v2-version-display">(v.0.2.2)</span></h3><svg class="w-5 h-5 text-gray-400" id="v2-toggle-updates-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v2-content-updates" class="px-4 pb-4 hidden"><ul id="v2-update-list" class="list-disc list-inside text-gray-300 text-sm space-y-1"><li>콘솔 오류 수정 및 Firebase 로직 안정화</li><li>코드 입력 1회 제한</li><li>프리즘 업그레이드 UI 위치 변경</li><li>'벽돌 운반' 기능 제거</li><li>'폐지 줍기' 발전과제 시스템 추가</li><li>v.0.2.2 업데이트 내역 추가</li></ul></div></div>
                 <!-- 로그아웃 --><div id="v2-logout-section" class="bg-gray-700 p-4 rounded-lg shadow-lg"><h3 class="text-lg font-semibold mb-2 text-white">계정</h3><button id="v2-logout-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors shadow-lg">로그아웃</button></div>
@@ -123,47 +140,50 @@
     -->
     <script>
         // --- 전역 설정 ---
-        const V3_UPDATE_TIME = new Date('2025-11-15T18:00:00+09:00').getTime();
+        const UPDATES = [
+            { 
+                version: 'v.0.3.0', 
+                time: new Date('2025-11-15T18:00:00+09:00').getTime(), 
+                code: 'LUNAR',
+                codeWindowHours: 1
+            },
+            // Future updates can be added here
+        ];
+        const TROPHIES = {
+            twilight: {
+                name: 'Twilight Trophy',
+                description: '밤하늘에서 반짝이는 별을 손에 넣은 자에게 주어지는 증표.',
+                isUnlocked: () => v2_hasTwilightTrophy,
+                effectText: '밤 시간 동안 모든 코인 가격 상승 확률 +2.5%',
+            }
+        };
         let isV3Active = false;
+        let isPreviewMode = false;
         let db, auth, userId;
         let v2_gameLoopTimeout = null, v2_priceUpdateTimeout = null;
+        let v2_zeroCooldownEndTime = 0;
+        let v2_starCatchingBuffEndTime = 0;
         
         // =======================================================
         // V2 게임 로직
         // =======================================================
         let v2_userCash = 100000, v2_userCubes = 0, v2_userPrisms = 0, v2_currentPrice = 10000, v2_lastPrice = 10000, v2_currentPrismPrice = 50000, v2_lastPrismPrice = 50000, v2_transactions = [], v2_isCubePurchased = false, v2_isPrismUpgraded = false, v2_usedCodes = [], v2_paperClicks = 0; let v2_dom = {}; let v2_scene, v2_camera, v2_renderer, v2_cube, v2_cubeMaterial, v2_ambientLight, v2_directionalLight; let v2_jobTimers = { paper: 0, starcatching: 0 }; let v2_priceChart, v2_prismPriceChart, v2_lunarPriceChart;
         // v0.3.0 state
-        let v2_userLunar = 0, v2_currentLunarPrice = 20000, v2_lastLunarPrice = 20000, v2_hasTwilightTrophy = false, v2_isLunarBlessed = false, v2_hasLunarSkin = false, v2_gameTime, v2_isDay = true;
+        let v2_userLunar = 0, v2_currentLunarPrice = 20000, v2_lastLunarPrice = 20000, v2_hasTwilightTrophy = false, v2_isLunarBlessed = false, v2_gameTime, v2_isDay = true;
 
         function initV2Charts() { const commonOptions = { scales: { y: { ticks: { color: '#9ca3af' }, grid: { color: '#4b5563' } }, x: { ticks: { color: '#9ca3af' }, grid: { color: '#4b5563' } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false }; if (document.getElementById('v2-price-chart')) { const ctxCube = document.getElementById('v2-price-chart').getContext('2d'); v2_priceChart = new Chart(ctxCube, { type: 'line', data: { labels: [], datasets: [{ label: 'CUBE Price', data: [], borderColor: '#60a5fa', tension: 0.1, pointRadius: 0 }] }, options: commonOptions }); } if (document.getElementById('v2-prism-price-chart')) { const ctxPrism = document.getElementById('v2-prism-price-chart').getContext('2d'); v2_prismPriceChart = new Chart(ctxPrism, { type: 'line', data: { labels: [], datasets: [{ label: 'PRISM Price', data: [], borderColor: '#f472b6', tension: 0.1, pointRadius: 0 }] }, options: commonOptions }); } if (isV3Active && document.getElementById('v2-lunar-price-chart')) { const ctxLunar = document.getElementById('v2-lunar-price-chart').getContext('2d'); v2_lunarPriceChart = new Chart(ctxLunar, { type: 'line', data: { labels: [], datasets: [{ label: 'LUNAR Price', data: [], borderColor: '#facc15', tension: 0.1, pointRadius: 0 }] }, options: commonOptions }); } }
         function v2_updateChartData(chart, price) { if (!chart) return; const now = isV3Active ? v2_gameTime : new Date(); const label = isV3Active ? `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}` : `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`; chart.data.labels.push(label); chart.data.datasets[0].data.push(price); const maxDataPoints = 30; if (chart.data.labels.length > maxDataPoints) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); } chart.update('none'); }
         
         function initV2Game() {
             Object.assign(v2_dom, {
-                canvasContainer: document.getElementById('v2-canvas-container'), cashDisplay: document.getElementById('v2-user-cash'), cubesDisplay: document.getElementById('v2-user-cubes'), prismsDisplay: document.getElementById('v2-user-prisms'), priceDisplay: document.getElementById('v2-current-price'), priceChangeDisplay: document.getElementById('v2-price-change'), prismPriceDisplay: document.getElementById('v2-current-prism-price'), prismPriceChangeDisplay: document.getElementById('v2-prism-price-change'), buyButtonCube: document.getElementById('v2-buy-button-cube'), sellButtonCube: document.getElementById('v2-sell-button-cube'), buyButtonPrism: document.getElementById('v2-buy-button-prism'), sellButtonPrism: document.getElementById('v2-sell-button-prism'), notification: document.getElementById('v2-notification'), buyCubeButton: document.getElementById('v2-buy-cube-button'), cubeOverlay: document.getElementById('v2-cube-purchase-overlay'), upgradePrismSection: document.getElementById('v2-upgrade-prism-section'), upgradePrismButton: document.getElementById('v2-upgrade-prism-button'), jobPaper: document.getElementById('v2-job-paper'), jobPaperTimer: document.getElementById('v2-job-paper-timer'), codeSubmitButton: document.getElementById('v2-code-submit-button'), passiveIncomeDisplay: document.getElementById('v2-passive-income-display'), incomePerSecond: document.getElementById('v2-income-per-second'), chartTabCube: document.getElementById('v2-chart-tab-cube'), chartTabPrism: document.getElementById('v2-chart-tab-prism'), chartCubeContainer: document.getElementById('v2-chart-cube-container'), chartPrismContainer: document.getElementById('v2-chart-prism-container'), transactionHistory: document.getElementById('v2-transaction-history'), newsFeed: document.getElementById('v2-news-feed'), codeInput: document.getElementById('v2-code-input'), amountInputCube: document.getElementById('v2-amount-input-cube'), amountInputPrism: document.getElementById('v2-amount-input-prism'),
-                userLunar: document.getElementById('v2-user-lunar'), currentLunarPrice: document.getElementById('v2-current-lunar-price'), lunarPriceChange: document.getElementById('v2-lunar-price-change'), lunarPriceDisplay: document.getElementById('v2-lunar-price-display'), lunarAssetDisplay: document.getElementById('v2-lunar-asset-display'), buyButtonLunar: document.getElementById('v2-buy-button-lunar'), sellButtonLunar: document.getElementById('v2-sell-button-lunar'), amountInputLunar: document.getElementById('v2-amount-input-lunar'), gameTime: document.getElementById('v2-game-time'), timeContainer: document.getElementById('v2-time-container'), jobStarcatching: document.getElementById('v2-job-starcatching'), jobStarcatchingTimer: document.getElementById('v2-job-starcatching-timer'), sleepButton: document.getElementById('v2-sleep-button'), sleepSection: document.getElementById('v2-sleep-section'), upgradeLunarSection: document.getElementById('v2-upgrade-lunar-section'), upgradeLunarBlessingButton: document.getElementById('v2-upgrade-lunar-blessing-button'), buyLunarSkinButton: document.getElementById('v2-buy-lunar-skin-button'), chartTabLunar: document.getElementById('v2-chart-tab-lunar'), chartLunarContainer: document.getElementById('v2-chart-lunar-container'), lunarTradeSection: document.getElementById('v2-lunar-trade-section'), gameTitle: document.getElementById('v2-game-title'), versionDisplay: document.getElementById('v2-version-display'), updateList: document.getElementById('v2-update-list')
+                canvasContainer: document.getElementById('v2-canvas-container'), cashDisplay: document.getElementById('v2-user-cash'), cubesDisplay: document.getElementById('v2-user-cubes'), prismsDisplay: document.getElementById('v2-user-prisms'), priceDisplay: document.getElementById('v2-current-price'), priceChangeDisplay: document.getElementById('v2-price-change'), prismPriceDisplay: document.getElementById('v2-current-prism-price'), prismPriceChangeDisplay: document.getElementById('v2-prism-price-change'), buyButtonCube: document.getElementById('v2-buy-button-cube'), sellButtonCube: document.getElementById('v2-sell-button-cube'), buyButtonPrism: document.getElementById('v2-buy-button-prism'), sellButtonPrism: document.getElementById('v2-sell-button-prism'), notification: document.getElementById('v2-notification'), buyCubeButton: document.getElementById('v2-buy-cube-button'), cubeOverlay: document.getElementById('v2-cube-purchase-overlay'), upgradePrismSection: document.getElementById('v2-upgrade-prism-section'), upgradePrismButton: document.getElementById('v2-upgrade-prism-button'), jobPaper: document.getElementById('v2-job-paper'), jobPaperTimer: document.getElementById('v2-job-paper-timer'), jobPaperText: document.getElementById('v2-job-paper-text'), codeSubmitButton: document.getElementById('v2-code-submit-button'), passiveIncomeDisplay: document.getElementById('v2-passive-income-display'), incomePerSecond: document.getElementById('v2-income-per-second'), chartTabCube: document.getElementById('v2-chart-tab-cube'), chartTabPrism: document.getElementById('v2-chart-tab-prism'), chartCubeContainer: document.getElementById('v2-chart-cube-container'), chartPrismContainer: document.getElementById('v2-chart-prism-container'), transactionHistory: document.getElementById('v2-transaction-history'), newsFeed: document.getElementById('v2-news-feed'), codeInput: document.getElementById('v2-code-input'), amountInputCube: document.getElementById('v2-amount-input-cube'), amountInputPrism: document.getElementById('v2-amount-input-prism'),
+                userLunar: document.getElementById('v2-user-lunar'), currentLunarPrice: document.getElementById('v2-current-lunar-price'), lunarPriceChange: document.getElementById('v2-lunar-price-change'), lunarPriceDisplay: document.getElementById('v2-lunar-price-display'), lunarAssetDisplay: document.getElementById('v2-lunar-asset-display'), buyButtonLunar: document.getElementById('v2-buy-button-lunar'), sellButtonLunar: document.getElementById('v2-sell-button-lunar'), amountInputLunar: document.getElementById('v2-amount-input-lunar'), gameTime: document.getElementById('v2-game-time'), timeContainer: document.getElementById('v2-time-container'), jobStarcatching: document.getElementById('v2-job-starcatching'), jobStarcatchingTimer: document.getElementById('v2-job-starcatching-timer'), sleepButton: document.getElementById('v2-sleep-button'), sleepSection: document.getElementById('v2-sleep-section'), upgradeLunarSection: document.getElementById('v2-upgrade-lunar-section'), upgradeLunarBlessingButton: document.getElementById('v2-upgrade-lunar-blessing-button'), chartTabLunar: document.getElementById('v2-chart-tab-lunar'), chartLunarContainer: document.getElementById('v2-chart-lunar-container'), lunarTradeSection: document.getElementById('v2-lunar-trade-section'), gameTitle: document.getElementById('v2-game-title'), versionDisplay: document.getElementById('v2-version-display'), updateList: document.getElementById('v2-update-list'),
+                trophyList: document.getElementById('v2-trophy-list'), trophyEffects: document.getElementById('v2-trophy-effects')
             });
-            v2_dom.buyButtonCube.addEventListener('click', () => v2_handleTrade('buy', 'cube')); v2_dom.sellButtonCube.addEventListener('click', () => v2_handleTrade('sell', 'cube')); v2_dom.buyButtonPrism.addEventListener('click', () => v2_handleTrade('buy', 'prism')); v2_dom.sellButtonPrism.addEventListener('click', () => v2_handleTrade('sell', 'prism')); v2_dom.buyCubeButton.addEventListener('click', v2_handleBuy3DCube); v2_dom.upgradePrismButton.addEventListener('click', v2_handleUpgradePrism); v2_dom.jobPaper.addEventListener('click', v2_handleJobClick); v2_dom.codeSubmitButton.addEventListener('click', v2_handleCodeSubmit); document.getElementById('v2-logout-button').addEventListener('click', window.handleLogout); v2_dom.chartTabCube.addEventListener('click', () => v2_switchChart('cube')); v2_dom.chartTabPrism.addEventListener('click', () => v2_switchChart('prism')); ['assets', 'trade', 'charts', 'history', 'news', 'jobs', 'code', 'updates'].forEach(s => document.getElementById(`v2-toggle-${s}`)?.addEventListener('click', () => { document.getElementById(`v2-content-${s}`).classList.toggle('hidden'); document.getElementById(`v2-toggle-${s}-icon`).classList.toggle('rotate-180'); })); 
+            v2_dom.buyButtonCube.addEventListener('click', () => v2_handleTrade('buy', 'cube')); v2_dom.sellButtonCube.addEventListener('click', () => v2_handleTrade('sell', 'cube')); v2_dom.buyButtonPrism.addEventListener('click', () => v2_handleTrade('buy', 'prism')); v2_dom.sellButtonPrism.addEventListener('click', () => v2_handleTrade('sell', 'prism')); v2_dom.buyCubeButton.addEventListener('click', v2_handleBuy3DCube); v2_dom.upgradePrismButton.addEventListener('click', v2_handleUpgradePrism); v2_dom.jobPaper.addEventListener('click', v2_handleJobClick); v2_dom.codeSubmitButton.addEventListener('click', v2_handleCodeSubmit); document.getElementById('v2-logout-button').addEventListener('click', window.handleLogout); v2_dom.chartTabCube.addEventListener('click', () => v2_switchChart('cube')); v2_dom.chartTabPrism.addEventListener('click', () => v2_switchChart('prism')); ['assets', 'trade', 'charts', 'history', 'news', 'jobs', 'trophies', 'code', 'updates'].forEach(s => document.getElementById(`v2-toggle-${s}`)?.addEventListener('click', () => { document.getElementById(`v2-content-${s}`).classList.toggle('hidden'); document.getElementById(`v2-toggle-${s}-icon`).classList.toggle('rotate-180'); })); 
             
             if (isV3Active) {
-                v2_dom.gameTitle.textContent = '큐브 코인 시뮬레이터 v.0.3.0';
-                v2_dom.versionDisplay.textContent = '(v.0.3.0)';
-                v2_dom.updateList.innerHTML = '<li>v.0.3.0 달빛 업데이트 적용</li><li>낮과 밤 시스템 추가</li><li>신규 코인 $LUNAR 및 달빛 이벤트 추가</li><li>수면 시스템 추가</li><li>\'폐지 줍기\' 로직 안정화</li>';
-                
-                v2_gameTime = new Date(2025, 10, 15, 9, 0, 0);
-                v2_dom.lunarPriceDisplay.classList.remove('hidden');
-                v2_dom.lunarAssetDisplay.classList.remove('hidden');
-                v2_dom.lunarTradeSection.classList.remove('hidden');
-                v2_dom.chartTabLunar.classList.remove('hidden');
-                v2_dom.timeContainer.classList.remove('hidden');
-                v2_dom.sleepSection.classList.remove('hidden');
-                v2_dom.buyButtonLunar.addEventListener('click', () => v2_handleTrade('buy', 'lunar')); v2_dom.sellButtonLunar.addEventListener('click', () => v2_handleTrade('sell', 'lunar'));
-                v2_dom.jobStarcatching.addEventListener('click', v2_handleJobClick);
-                v2_dom.chartTabLunar.addEventListener('click', () => v2_switchChart('lunar'));
-                v2_dom.upgradeLunarBlessingButton.addEventListener('click', v2_handleUpgradeLunarBlessing);
-                v2_dom.buyLunarSkinButton.addEventListener('click', v2_handleBuyLunarSkin);
-                v2_dom.sleepButton.addEventListener('click', v2_handleSleep);
-                document.getElementById('v2-toggle-sleep')?.addEventListener('click', () => { document.getElementById('v2-content-sleep').classList.toggle('hidden'); document.getElementById('v2-toggle-sleep-icon').classList.toggle('rotate-180'); });
+                v2_activateV3Features(false); // Activate V3 UI, but don't re-init things if called from here
             }
 
             initV2Three();
@@ -173,10 +193,77 @@
             v2_gameLoop(); 
             v2_priceUpdateLoop();
         }
+
+        function v2_activateV3Features(isDynamic = true) {
+            if(isDynamic) isV3Active = true;
+
+            v2_dom.gameTitle.textContent = '큐브 코인 시뮬레이터 v.0.3.0';
+            v2_dom.versionDisplay.textContent = '(v.0.3.0)';
+            v2_dom.updateList.innerHTML = '<li>v.0.3.0 달빛 업데이트 적용</li><li>낮과 밤 시스템 추가</li><li>신규 코인 $LUNAR 및 달빛 이벤트 추가</li><li>수면 시스템 추가</li><li>\'폐지 줍기\' 로직 안정화</li>';
+            
+            if(isDynamic) v2_gameTime = new Date(2025, 10, 15, 9, 0, 0);
+            v2_dom.lunarPriceDisplay.classList.remove('hidden');
+            v2_dom.lunarAssetDisplay.classList.remove('hidden');
+            v2_dom.lunarTradeSection.classList.remove('hidden');
+            v2_dom.chartTabLunar.classList.remove('hidden');
+            v2_dom.timeContainer.classList.remove('hidden');
+            v2_dom.sleepSection.classList.remove('hidden');
+            if(v2_isCubePurchased) v2_dom.upgradeLunarSection.classList.remove('hidden');
+
+            v2_dom.buyButtonLunar.addEventListener('click', () => v2_handleTrade('buy', 'lunar')); v2_dom.sellButtonLunar.addEventListener('click', () => v2_handleTrade('sell', 'lunar'));
+            v2_dom.jobStarcatching.addEventListener('click', v2_handleJobClick);
+            v2_dom.chartTabLunar.addEventListener('click', () => v2_switchChart('lunar'));
+            v2_dom.upgradeLunarBlessingButton.addEventListener('click', v2_handleUpgradeLunarBlessing);
+            v2_dom.sleepButton.addEventListener('click', v2_handleSleep);
+            document.getElementById('v2-toggle-sleep')?.addEventListener('click', () => { document.getElementById(`v2-content-sleep`).classList.toggle('hidden'); document.getElementById(`v2-toggle-sleep-icon`).classList.toggle('rotate-180'); });
+            
+            initV2Charts(); // Re-init charts to add Lunar
+            
+            if(isDynamic) {
+                if (v2_priceUpdateTimeout) clearTimeout(v2_priceUpdateTimeout);
+                v2_priceUpdateLoop(); // Restart price loop with new logic
+            }
+        }
+
         function initV2Three() { v2_scene = new THREE.Scene(); v2_camera = new THREE.PerspectiveCamera(75, v2_dom.canvasContainer.clientWidth / v2_dom.canvasContainer.clientHeight, 0.1, 1000); v2_camera.position.z = 5; v2_renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); v2_renderer.setSize(v2_dom.canvasContainer.clientWidth, v2_dom.canvasContainer.clientHeight); v2_dom.canvasContainer.prepend(v2_renderer.domElement); const geometry = new THREE.BoxGeometry(2.5, 2.5, 2.5); v2_cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x60a5fa, metalness: 0.5, roughness: 0.1, transparent: true, opacity: 0.9 }); v2_cube = new THREE.Mesh(geometry, v2_cubeMaterial); v2_scene.add(v2_cube); v2_ambientLight = new THREE.AmbientLight(0xffffff, 0.7); v2_scene.add(v2_ambientLight); v2_directionalLight = new THREE.DirectionalLight(0xffffff, 1); v2_directionalLight.position.set(5, 5, 5); v2_scene.add(v2_directionalLight); v2_animate(); }
         function v2_animate() { requestAnimationFrame(v2_animate); if (v2_isCubePurchased) { v2_cube.rotation.x += 0.005; v2_cube.rotation.y += 0.005; } if (v2_renderer) v2_renderer.render(v2_scene, v2_camera); }
         function v2_showNotification(message, isError = true) { v2_dom.notification.textContent = message; v2_dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`; setTimeout(() => { v2_dom.notification.classList.add('opacity-0', 'translate-y-10'); }, 3000); }
         
+        function v2_updateTrophyDisplay() {
+            if (!v2_dom.trophyList || !v2_dom.trophyEffects) return;
+
+            v2_dom.trophyList.innerHTML = '';
+            let totalEffectsHTML = '';
+            let hasEffects = false;
+
+            for (const key in TROPHIES) {
+                const trophy = TROPHIES[key];
+                const isUnlocked = trophy.isUnlocked();
+
+                const trophyEl = document.createElement('div');
+                trophyEl.className = `bg-gray-600 p-3 rounded-lg flex items-center gap-4 transition-opacity ${isUnlocked ? '' : 'opacity-50'}`;
+                
+                trophyEl.innerHTML = `
+                    <div>
+                        <span class="font-bold text-lg ${isUnlocked ? 'text-yellow-400' : 'text-gray-400'}">${isUnlocked ? '🏆' : '🔒'} ${trophy.name}</span>
+                        <p class="text-xs text-gray-400 mt-1">${trophy.description}</p>
+                    </div>
+                `;
+                v2_dom.trophyList.appendChild(trophyEl);
+
+                if (isUnlocked) {
+                    totalEffectsHTML += `<p>• ${trophy.effectText}</p>`;
+                    hasEffects = true;
+                }
+            }
+
+            if (hasEffects) {
+                v2_dom.trophyEffects.innerHTML = totalEffectsHTML;
+            } else {
+                v2_dom.trophyEffects.innerHTML = '<p class="text-gray-500">활성화된 효과가 없습니다.</p>';
+            }
+        }
+
         function v2_updateUI() {
             if (!v2_dom.cashDisplay) return;
             v2_dom.cashDisplay.textContent = Math.floor(v2_userCash).toLocaleString('ko-KR');
@@ -194,19 +281,23 @@
             updatePriceDisplay(v2_dom.priceDisplay, v2_dom.priceChangeDisplay, v2_currentPrice, v2_lastPrice);
             updatePriceDisplay(v2_dom.prismPriceDisplay, v2_dom.prismPriceChangeDisplay, v2_currentPrismPrice, v2_lastPrismPrice);
             
+            let lunarIncome = 0;
             if (isV3Active) {
                 v2_dom.userLunar.textContent = v2_userLunar.toLocaleString('ko-KR');
                 updatePriceDisplay(v2_dom.currentLunarPrice, v2_dom.lunarPriceChange, v2_currentLunarPrice, v2_lastLunarPrice);
                 const gameHours = v2_gameTime.getHours();
                 const gameMinutes = String(v2_gameTime.getMinutes()).padStart(2, '0');
                 v2_dom.gameTime.textContent = `${String(gameHours).padStart(2, '0')}:${gameMinutes} (${v2_isDay ? 'Day' : 'Night'})`;
+                if(v2_isLunarBlessed && !v2_isDay) lunarIncome = 100;
             }
 
             const baseIncome = v2_isCubePurchased ? 100 : 0;
             const prismIncome = v2_isPrismUpgraded ? 900 : 0;
-            v2_dom.incomePerSecond.textContent = `+${(baseIncome + prismIncome).toLocaleString('ko-KR')} KRW / sec`;
+            const totalIncome = baseIncome + prismIncome + lunarIncome;
+            v2_dom.incomePerSecond.textContent = `+${totalIncome.toLocaleString('ko-KR')} KRW / sec`;
             
             v2_updateTransactionHistory();
+            v2_updateTrophyDisplay();
         }
 
         function v2_updateTransactionHistory() { if (!v2_dom.transactionHistory) return; if (v2_transactions.length === 0) { v2_dom.transactionHistory.innerHTML = '<div class="text-gray-400 text-sm text-center p-4">...</div>'; return; } v2_dom.transactionHistory.innerHTML = ''; v2_transactions.slice(-100).forEach(tx => { const el = document.createElement('div'); el.className = 'border-b border-gray-600 p-2 text-sm'; const typeClass = tx.type === '매수' ? 'text-green-400' : 'text-red-400'; el.innerHTML = `<div><span class="${typeClass} font-bold">[${tx.type}]</span> ${tx.amount.toLocaleString('ko-KR')} ${tx.coin}</div><div class="text-xs text-gray-400">@ ${tx.price.toLocaleString('ko-KR')} KRW</div>`; v2_dom.transactionHistory.prepend(el); }); }
@@ -223,25 +314,26 @@
         }
 
         function v2_priceUpdateLoop(isSleeping = false) {
-             const configs = {
-                cube: { price: v2_currentPrice, min: 1000, day: { riseProb: 0.51, mags: [0.5, 0.45, 0.05] }, night: { riseProb: 0.51, mags: [0.6, 0.4, 0] } },
-                prism: { price: v2_currentPrismPrice, min: 5000, day: { riseProb: 0.53, mags: [0.5, 0.45, 0.05] }, night: { riseProb: 0.53, mags: [0.6, 0.4, 0] } },
-                lunar: { price: v2_currentLunarPrice, min: 20000, day: { riseProb: 0.45, mags: [0.5, 0.45, 0.05] }, night: { riseProb: 0.55, mags: [0.4, 0.5, 0.1] } },
+            const getFullConfig = (coinConfig, mode) => ({ min: coinConfig.min, ...coinConfig[mode] });
+            const configs = {
+                cube: { min: 1000, day: { riseProb: 0.51, mags: [0.5, 0.45, 0.05] }, night: { riseProb: 0.51, mags: [0.6, 0.4, 0] } },
+                prism: { min: 5000, day: { riseProb: 0.53, mags: [0.5, 0.45, 0.05] }, night: { riseProb: 0.53, mags: [0.6, 0.4, 0] } },
+                lunar: { min: 20000, day: { riseProb: 0.45, mags: [0.5, 0.45, 0.05] }, night: { riseProb: 0.55, mags: [0.4, 0.5, 0.1] } },
                 sleep: { riseProb: 0.5, mags: [0.1, 0.4, 0.5] }
             };
 
             const updatePrices = (mode) => {
                 v2_lastPrice = v2_currentPrice;
-                v2_currentPrice = v2_getNewPrice(v2_currentPrice, mode === 'sleep' ? configs.sleep : configs.cube[mode]);
+                v2_currentPrice = v2_getNewPrice(v2_currentPrice, mode === 'sleep' ? {min: configs.cube.min, ...configs.sleep} : getFullConfig(configs.cube, mode));
                 if(!isSleeping) v2_updateChartData(v2_priceChart, v2_currentPrice);
 
                 v2_lastPrismPrice = v2_currentPrismPrice;
-                v2_currentPrismPrice = v2_getNewPrice(v2_currentPrismPrice, mode === 'sleep' ? configs.sleep : configs.prism[mode]);
+                v2_currentPrismPrice = v2_getNewPrice(v2_currentPrismPrice, mode === 'sleep' ? {min: configs.prism.min, ...configs.sleep} : getFullConfig(configs.prism, mode));
                 if(!isSleeping) v2_updateChartData(v2_prismPriceChart, v2_currentPrismPrice);
                 
                 if(isV3Active) {
                     v2_lastLunarPrice = v2_currentLunarPrice;
-                    v2_currentLunarPrice = v2_getNewPrice(v2_currentLunarPrice, mode === 'sleep' ? configs.sleep : configs.lunar[mode]);
+                    v2_currentLunarPrice = v2_getNewPrice(v2_currentLunarPrice, mode === 'sleep' ? {min: configs.lunar.min, ...configs.sleep} : getFullConfig(configs.lunar, mode));
                     if(!isSleeping) v2_updateChartData(v2_lunarPriceChart, v2_currentLunarPrice);
                 }
             };
@@ -250,7 +342,7 @@
                  v2_lastPrice = v2_currentPrice; v2_currentPrice = v2_getNewPrice(v2_currentPrice, {riseProb: 0.51, mags: [0.7, 0.25, 0.05], min:1000}); v2_updateChartData(v2_priceChart, v2_currentPrice);
                  v2_lastPrismPrice = v2_currentPrismPrice; v2_currentPrismPrice = v2_getNewPrice(v2_currentPrismPrice, {riseProb: 0.53, mags: [0.6, 0.3, 0.1], min:5000}); v2_updateChartData(v2_prismPriceChart, v2_currentPrismPrice);
             } else {
-                updatePrices(isSleeping ? 'sleep' : (v2_isDay ? 'day' : 'night'));
+                 updatePrices(isSleeping ? 'sleep' : (v2_isDay ? 'day' : 'night'));
             }
 
             if (!isSleeping) {
@@ -261,6 +353,8 @@
         
         function v2_gameLoop() {
             const now = Date.now();
+            const isZeroCooldown = v2_zeroCooldownEndTime > now;
+
             if (isV3Active) {
                 v2_gameTime.setMinutes(v2_gameTime.getMinutes() + 1); // 1 min per 250ms
                 const currentHour = v2_gameTime.getHours();
@@ -273,32 +367,44 @@
                     if(v2_directionalLight) v2_directionalLight.intensity = v2_isDay ? 1.0 : 0.3;
                 }
                 
-                v2_dom.jobStarcatching.classList.toggle('hidden', v2_isDay);
+                v2_dom.jobStarcatching.classList.toggle('hidden', v2_isDay || v2_hasTwilightTrophy);
                 const canSleep = currentHour >= 20 || currentHour < 8;
                 v2_dom.sleepButton.classList.toggle('btn-disabled', !canSleep);
                 
-                // Correct Lunar Blessing logic: +1/5000 CUBE per second at night
-                if (v2_isLunarBlessed && !v2_isDay) {
-                    v2_userCubes += (1/5000) / 4; // Loop runs 4 times a second (every 250ms)
+                if (v2_dom.jobPaperText) {
+                    if(v2_hasTwilightTrophy && !v2_isDay) {
+                        v2_dom.jobPaperText.textContent = '달빛 아래 폐지 줍기 (+1500)';
+                    } else {
+                        v2_dom.jobPaperText.textContent = '폐지 줍기 (+500)';
+                    }
                 }
             }
             
             // KRW Passive Income
             const baseIncome = v2_isCubePurchased ? 100 : 0;
             const prismIncome = v2_isPrismUpgraded ? 900 : 0;
-            v2_userCash += (baseIncome + prismIncome) / 4;
+            let lunarIncome = 0;
+            if (isV3Active && v2_isLunarBlessed && !v2_isDay) {
+                lunarIncome = 100;
+            }
+            v2_userCash += (baseIncome + prismIncome + lunarIncome) / 4;
 
             // Job Timers
             Object.keys(v2_jobTimers).forEach(job => {
                 const timerEl = v2_dom[`job${job}Timer`];
                 const jobEl = v2_dom[`job${job}`];
-                if (v2_jobTimers[job] > now) {
-                    const timeLeft = Math.ceil((v2_jobTimers[job] - now) / 1000);
-                    if (timerEl) timerEl.textContent = ` (${timeLeft}초)`;
-                    if(jobEl) jobEl.classList.add('btn-disabled');
-                } else if(jobEl) {
-                    jobEl.classList.remove('btn-disabled');
-                    if (timerEl) timerEl.textContent = '';
+                if (isZeroCooldown) {
+                    if (jobEl) jobEl.classList.remove('btn-disabled');
+                    if (timerEl) timerEl.textContent = '(0초)';
+                } else {
+                    if (v2_jobTimers[job] > now) {
+                        const timeLeft = Math.ceil((v2_jobTimers[job] - now) / 1000);
+                        if (timerEl) timerEl.textContent = `(${timeLeft}초)`;
+                        if(jobEl) jobEl.classList.add('btn-disabled');
+                    } else if(jobEl) {
+                        jobEl.classList.remove('btn-disabled');
+                        if (timerEl) timerEl.textContent = '';
+                    }
                 }
             });
             v2_updateUI();
@@ -334,73 +440,151 @@
         function v2_handleCodeSubmit() {
             const code = v2_dom.codeInput.value.trim();
             if (code === '') return;
+        
+            // Developer Codes (reusable)
+            if (code === 'ice_cube101') {
+                v2_zeroCooldownEndTime = Date.now() + 60 * 1000;
+                v2_showNotification('개발자 코드: 1분간 작업 쿨타임이 제거됩니다!', false);
+                v2_dom.codeInput.value = '';
+                v2_updateUI(); // To immediately reflect cooldown change
+                return; // No need to save, it's a temporary client-side buff
+            }
+            if (code === 'ice_cube102') {
+                v2_userCash += 1000000000000;
+                v2_showNotification('개발자 코드: 1조 KRW!', false);
+                v2_dom.codeInput.value = '';
+                v2_updateUI();
+                v2_saveGameState().catch(e => console.error("Save failed:", e));
+                return;
+            }
+            if (code === 'ice_cube103') {
+                v2_starCatchingBuffEndTime = Date.now() + 60 * 1000;
+                v2_showNotification('개발자 코드: 1분간 밤하늘의 별 따기 확률이 10%로 증가합니다!', false);
+                v2_dom.codeInput.value = '';
+                return;
+            }
 
-            if (code === 'v.0.3.0') {
-                if (!isV3Active) {
-                    // Activate preview
-                    v2_showNotification('v.0.3.0 미리 체험 모드를 활성화합니다! 재시작합니다...', false);
-                    sessionStorage.setItem('v3_preview', 'true');
-                    v2_saveGameState().finally(() => {
-                        setTimeout(() => location.reload(), 2000);
-                    });
-                    return;
-                } else {
-                    // It's already active, try to claim reward
-                    if (v2_usedCodes.includes(code)) {
-                        v2_showNotification('이미 사용된 코드', true);
-                        return;
-                    }
-                    v2_userLunar += 10;
-                    v2_showNotification('v.0.3.0 업데이트 보상: 10 LUNAR!', false);
-                    v2_usedCodes.push(code);
+            // New day/night developer codes for v.0.3.0+
+            if (isV3Active) {
+                if (code === 'ice_day') {
+                    v2_gameTime.setHours(9, 0, 0);
+                    v2_showNotification('개발자 코드: 시간을 낮으로 변경합니다.', false);
                     v2_dom.codeInput.value = '';
-                    v2_updateUI();
-                    v2_saveGameState().catch(e => console.error("Save failed:", e));
-                    return;
+
+                    // Manually trigger day transition logic for instant visual feedback
+                    v2_isDay = true;
+                    if(v2_renderer) v2_renderer.setClearColor(0x222222);
+                    if(v2_ambientLight) v2_ambientLight.intensity = 0.7;
+                    if(v2_directionalLight) v2_directionalLight.intensity = 1.0;
+                    
+                    v2_updateUI(); // Update text displays like clock and button states
+                    return; // Don't save, it's a dev tool
+                }
+                if (code === 'ice_night') {
+                    v2_gameTime.setHours(20, 0, 0);
+                    v2_showNotification('개발자 코드: 시간을 밤으로 변경합니다.', false);
+                    v2_dom.codeInput.value = '';
+
+                    // Manually trigger night transition logic for instant visual feedback
+                    v2_isDay = false;
+                    if(v2_renderer) v2_renderer.setClearColor(0x050522);
+                    if(v2_ambientLight) v2_ambientLight.intensity = 0.2;
+                    if(v2_directionalLight) v2_directionalLight.intensity = 0.3;
+
+                    v2_updateUI(); // Update text displays like clock and button states
+                    return; // Don't save, it's a dev tool
                 }
             }
-            
+        
+            // Check if code was already used
             if (v2_usedCodes.includes(code)) {
                 v2_showNotification('이미 사용된 코드', true);
                 return;
             }
-            
-            let used = false;
-            if (code === 'PRISM') {
+        
+            const lunarUpdate = UPDATES.find(u => u.code === 'LUNAR');
+            if (lunarUpdate && code === 'LUNAR') {
+                const now = Date.now();
+                const codeWindow = lunarUpdate.codeWindowHours * 60 * 60 * 1000;
+                const isCodeActive = now >= (lunarUpdate.time - codeWindow) && now <= (lunarUpdate.time + codeWindow);
+                
+                if (!isCodeActive) {
+                    v2_showNotification('유효하지 않거나 만료된 코드', true);
+                    return;
+                }
+                v2_userCash += 50000;
+                if(isV3Active) v2_userLunar += 1;
+                v2_showNotification('업데이트 기념 보상! (+50,000 KRW, +1 LUNAR)', false);
+                v2_usedCodes.push(code);
+
+            } else if (code === 'v.0.3.0') {
+                if (!isV3Active) {
+                    isPreviewMode = true;
+                    v2_showNotification('v.0.3.0 미리 체험 모드를 활성화합니다! (진행내용 저장 안됨)', false);
+                    v2_activateV3Features(true);
+                    return; // Special case, doesn't save game state
+                } else {
+                    v2_userLunar += 10;
+                    v2_showNotification('v.0.3.0 업데이트 보상: 10 LUNAR!', false);
+                    v2_usedCodes.push(code);
+                }
+            } else if (code === 'PRISM') {
                 v2_userCash += 200000;
                 v2_showNotification("v2 업데이트 보상: 200,000 KRW!", false);
-                used = true;
-            } else if (code === 'ice_cube102') {
-                v2_userCash += 1000000000000;
-                v2_showNotification('개발자 코드: 1조 KRW!', false);
-                used = true;
+                v2_usedCodes.push(code);
             } else {
                 v2_showNotification('유효하지 않은 코드', true);
+                return;
             }
             
-            if (used) {
-                v2_usedCodes.push(code);
-                v2_dom.codeInput.value = '';
-                v2_updateUI();
-                v2_saveGameState().catch(e => console.error("Save failed:", e));
-            }
+            v2_dom.codeInput.value = '';
+            v2_updateUI();
+            v2_saveGameState().catch(e => console.error("Save failed:", e));
         }
 
         function v2_handleJobClick(e) {
             const id = e.currentTarget.id.split('-')[2];
             const now = Date.now();
-            if (v2_jobTimers[id] > now) { v2_showNotification('아직 쿨타임입니다.', true); return; }
-            if (id === 'paper') { v2_userCash += 500; v2_paperClicks++; v2_showNotification('폐지 줍기 완료! (+500 KRW)', false); v2_jobTimers.paper = now + 5000; }
+            const isZeroCooldown = v2_zeroCooldownEndTime > now;
+
+            if (!isZeroCooldown && v2_jobTimers[id] > now) { 
+                v2_showNotification('아직 쿨타임입니다.', true); 
+                return; 
+            }
+
+            if (id === 'paper') { 
+                const isEnhanced = isV3Active && v2_hasTwilightTrophy && !v2_isDay;
+                const reward = isEnhanced ? 1500 : 500;
+                const message = isEnhanced ? '달빛을 받으며 폐지 줍기 완료! (+1500 KRW)' : '폐지 줍기 완료! (+500 KRW)';
+                v2_userCash += reward; 
+                v2_paperClicks++; 
+                v2_showNotification(message, false); 
+                if (!isZeroCooldown) v2_jobTimers.paper = now + 5000; 
+            }
+            
             if (isV3Active && id === 'starcatching') {
-                if(Math.random() < 0.01) { v2_hasTwilightTrophy = true; v2_showNotification('별을 땄습니다! [Twilight Trophy] 획득!', false); } else { v2_showNotification('별을 놓쳤습니다...', true); }
-                v2_jobTimers.starcatching = now + 5000;
+                if (v2_hasTwilightTrophy) {
+                    v2_showNotification('이미 밤하늘의 별을 손에 넣었습니다.', true);
+                    return;
+                }
+                const isBuffActive = v2_starCatchingBuffEndTime > now;
+                const probability = isBuffActive ? 0.10 : 0.01;
+                
+                if(Math.random() < probability) { 
+                    v2_hasTwilightTrophy = true; 
+                    v2_showNotification(`별을 땄습니다! [Twilight Trophy] 획득! (성공 확률: ${probability * 100}%)`, false); 
+                    v2_dom.jobStarcatching.classList.add('hidden');
+                } else { 
+                    v2_showNotification('별을 놓쳤습니다...', true); 
+                }
+                if (!isZeroCooldown) v2_jobTimers.starcatching = now + 5000;
             }
             v2_updateUI(); v2_saveGameState().catch(e => console.error("Save failed:", e));
         }
         function v2_handleBuy3DCube() { if (v2_userCash >= 1000000) { v2_userCash -= 1000000; v2_isCubePurchased = true; v2_dom.cubeOverlay.style.display = 'none'; v2_dom.passiveIncomeDisplay.classList.remove('hidden'); v2_dom.upgradePrismSection.classList.remove('hidden'); if(isV3Active) v2_dom.upgradeLunarSection.classList.remove('hidden'); v2_updateUI(); v2_showNotification('3D 큐브 활성화! 패시브 수입 시작!', false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('1백만 KRW 필요', true); }
         function v2_handleUpgradePrism() { if (!v2_isPrismUpgraded && v2_userPrisms >= 100) { v2_userPrisms -= 100; v2_isPrismUpgraded = true; v2_dom.upgradePrismSection.style.display = 'none'; v2_cubeMaterial.color.set(0xf472b6); v2_cubeMaterial.emissive.set(0xf472b6); v2_cubeMaterial.emissiveIntensity = 0.3; v2_updateUI(); v2_showNotification('프리즘 업그레이드 완료!', false); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else v2_showNotification('100 PRISM 필요', true); }
         function v2_handleUpgradeLunarBlessing() { if (v2_isLunarBlessed) { v2_showNotification('이미 적용된 강화입니다.', true); return; } if (v2_userLunar >= 200) { v2_userLunar -= 200; v2_isLunarBlessed = true; v2_dom.upgradeLunarBlessingButton.classList.add('btn-disabled'); v2_showNotification('Lunar Blessing 완료!', false); v2_updateUI(); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else { v2_showNotification('200 LUNAR 필요', true); } }
-        function v2_handleBuyLunarSkin() { if (v2_hasLunarSkin) { v2_showNotification('이미 보유한 스킨입니다.', true); return; } if (v2_userLunar >= 500) { v2_userLunar -= 500; v2_hasLunarSkin = true; v2_dom.buyLunarSkinButton.classList.add('btn-disabled'); v2_cubeMaterial.color.set(0xfde047); v2_cubeMaterial.emissive.set(0xfde047); v2_cubeMaterial.emissiveIntensity = 0.4; v2_showNotification('Lunar Cube 스킨 구매 완료!', false); v2_updateUI(); v2_saveGameState().catch(e => console.error("Save failed:", e)); } else { v2_showNotification('500 LUNAR 필요', true); } }
+        
         function v2_handleSleep() {
             const currentHour = v2_gameTime.getHours();
             if (currentHour < 20 && currentHour >= 8) { v2_showNotification('밤에만 잘 수 있습니다.', true); return; }
@@ -425,13 +609,17 @@
         }
         
         function v2_saveGameState() {
+            if (isPreviewMode) {
+                console.log("Save skipped: Preview mode is active.");
+                return Promise.resolve();
+            }
             if (!db || !userId) {
                 console.warn("Save skipped: no db or userId");
                 return Promise.resolve();
             }
             const gameState = {
                 userCash: v2_userCash, userCubes: v2_userCubes, userPrisms: v2_userPrisms, transactions: v2_transactions, isCubePurchased: v2_isCubePurchased, isPrismUpgraded: v2_isPrismUpgraded, usedCodes: v2_usedCodes, paperClicks: v2_paperClicks,
-                userLunar: v2_userLunar, hasTwilightTrophy: v2_hasTwilightTrophy, isLunarBlessed: v2_isLunarBlessed, hasLunarSkin: v2_hasLunarSkin, gameTime: isV3Active ? v2_gameTime.getTime() : null
+                userLunar: v2_userLunar, hasTwilightTrophy: v2_hasTwilightTrophy, isLunarBlessed: v2_isLunarBlessed, gameTime: isV3Active ? v2_gameTime.getTime() : null
             };
             if (window.setDoc) {
                 console.log("Attempting to save game state for user:", userId);
@@ -449,7 +637,7 @@
                 const data = docSnap.data();
                 v2_userCash = data.userCash ?? 100000; v2_userCubes = data.userCubes ?? 0; v2_userPrisms = data.userPrisms ?? 0; v2_transactions = data.transactions ?? []; v2_isCubePurchased = data.isCubePurchased ?? false; v2_isPrismUpgraded = data.isPrismUpgraded ?? false; v2_usedCodes = data.usedCodes ?? []; v2_paperClicks = data.paperClicks ?? 0;
                 if (isV3Active) {
-                    v2_userLunar = data.userLunar ?? 0; v2_hasTwilightTrophy = data.hasTwilightTrophy ?? false; v2_isLunarBlessed = data.isLunarBlessed ?? false; v2_hasLunarSkin = data.hasLunarSkin ?? false; v2_gameTime = data.gameTime ? new Date(data.gameTime) : new Date(2025, 10, 15, 9, 0, 0);
+                    v2_userLunar = data.userLunar ?? 0; v2_hasTwilightTrophy = data.hasTwilightTrophy ?? false; v2_isLunarBlessed = data.isLunarBlessed ?? false; v2_gameTime = data.gameTime ? new Date(data.gameTime) : new Date(2025, 10, 15, 9, 0, 0);
                 }
             } else {
                 console.log("No saved data found, initializing new game state for user:", userId);
@@ -459,8 +647,8 @@
             v2_updateUI();
             if (v2_isCubePurchased) { v2_dom.cubeOverlay.style.display = 'none'; v2_dom.passiveIncomeDisplay.classList.remove('hidden'); v2_dom.upgradePrismSection.classList.remove('hidden'); if(isV3Active) v2_dom.upgradeLunarSection.classList.remove('hidden'); }
             if (v2_isPrismUpgraded) { v2_dom.upgradePrismSection.style.display = 'none'; v2_cubeMaterial.color.set(0xf472b6); v2_cubeMaterial.emissive.set(0xf472b6); v2_cubeMaterial.emissiveIntensity = 0.3; }
-            if (isV3Active && v2_hasLunarSkin) { v2_dom.buyLunarSkinButton.classList.add('btn-disabled'); v2_cubeMaterial.color.set(0xfde047); v2_cubeMaterial.emissive.set(0xfde047); v2_cubeMaterial.emissiveIntensity = 0.4; }
             if (isV3Active && v2_isLunarBlessed) { v2_dom.upgradeLunarBlessingButton.classList.add('btn-disabled'); }
+            v2_updateTrophyDisplay();
         }
 
         async function loadGameData() {
@@ -520,7 +708,6 @@
                                 console.error("Failed to save game state before logout:", error);
                            }
                         }
-                        sessionStorage.removeItem('v3_preview');
                         await signOut(auth);
                     };
                     
@@ -544,24 +731,49 @@
         }
 
         window.onload = () => {
-            const isPreview = sessionStorage.getItem('v3_preview') === 'true';
-            isV3Active = isPreview || Date.now() >= V3_UPDATE_TIME;
+            const v3update = UPDATES.find(u => u.version === 'v.0.3.0');
+            isV3Active = v3update ? (Date.now() >= v3update.time) : false;
             
             const banner = document.getElementById('update-banner');
             const now = Date.now();
-            const fiveHours = 5 * 60 * 60 * 1000;
-
-            if (!isV3Active && V3_UPDATE_TIME - now > 0 && V3_UPDATE_TIME - now <= fiveHours) {
-                banner.classList.remove('hidden');
-                const countdown = () => {
-                    const timeLeft = V3_UPDATE_TIME - Date.now();
-                    if (timeLeft <= 0) { banner.innerHTML = 'v.0.3.0 업데이트! 페이지를 새로고침 해주세요.'; clearInterval(interval); return; }
-                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                    banner.innerHTML = `v.0.3.0 달빛 업데이트까지: ${hours}시간 ${minutes}분 ${seconds}초`;
-                };
-                const interval = setInterval(countdown, 1000); countdown();
+            const nextUpdate = UPDATES.find(update => update.time > now);
+        
+            if (nextUpdate) {
+                const fiveHours = 5 * 60 * 60 * 1000;
+                const codeWindow = (nextUpdate.codeWindowHours || 1) * 60 * 60 * 1000;
+        
+                if (now >= (nextUpdate.time - fiveHours) && now <= (nextUpdate.time + codeWindow)) {
+                    banner.classList.remove('hidden');
+                    let interval;
+                    const countdown = () => {
+                        const currentTime = Date.now();
+                        const timeLeft = nextUpdate.time - currentTime;
+                        
+                        let bannerText = '';
+        
+                        if (timeLeft > 0) {
+                            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                            bannerText = `${nextUpdate.version} 업데이트까지: ${hours}시간 ${minutes}분 ${seconds}초`;
+                        } else {
+                            bannerText = `${nextUpdate.version} 업데이트 적용! 페이지를 새로고침 해주세요.`;
+                        }
+                        
+                        if (nextUpdate.code && currentTime >= (nextUpdate.time - codeWindow) && currentTime <= (nextUpdate.time + codeWindow)) {
+                             bannerText += ` <span class="mx-2 font-extrabold text-yellow-300 animate-pulse">[코드: ${nextUpdate.code}]</span> 입력 시 특별 보상 지급!`;
+                        }
+                        
+                        banner.innerHTML = bannerText;
+        
+                        if (currentTime > nextUpdate.time + codeWindow) {
+                            banner.classList.add('hidden');
+                            if (interval) clearInterval(interval);
+                        }
+                    };
+                    interval = setInterval(countdown, 1000);
+                    countdown();
+                }
             }
 
             const loginForm = document.getElementById('login-form'), signupForm = document.getElementById('signup-form');
