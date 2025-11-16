@@ -32,6 +32,16 @@ const WEATHER_DATA = {
     '바람': { icon: '💨', short_desc: '효과 없음', long_desc: '현재 특별한 효과 없음.' }
 };
 
+const TROPHY_DATA = {
+    'weatherMaster': {
+        name: '날씨의 지배자',
+        icon: '🏆',
+        desc: '모든 종류의 날씨를 경험했습니다.',
+        reward: '좋은 효과를 가진 날씨가 2.5% 더 자주 나옵니다.',
+        isUnlocked: (state: any) => state.hasWeatherTrophy
+    }
+};
+
 
 let gameLoopInterval: number | null = null;
 let priceUpdateTimeoutCube: number | null = null;
@@ -83,6 +93,7 @@ const getInitialGameState = () => ({
     isSleeping: false,
     usedCodes: [],
     lastOnlineTimestamp: Date.now(),
+    hasWeatherTrophy: false,
 });
 
 gameState = getInitialGameState();
@@ -216,8 +227,9 @@ function initGame() {
         incomeSourceUpgrades: document.getElementById('income-source-upgrades'),
         userInfo: document.getElementById('user-info'),
         logoutButton: document.getElementById('logout-button'),
+        trophyList: document.getElementById('trophy-list'),
     };
-    ['assets', 'computer', 'almanac', 'shop', 'trade', 'charts', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
+    ['assets', 'computer', 'almanac', 'shop', 'trade', 'charts', 'code', 'trophy'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
     if (dom.computerUpgradeButton) dom.computerUpgradeButton.addEventListener('click', handleComputerUpgrade);
     if (dom.codeSubmitButton) dom.codeSubmitButton.addEventListener('click', handleCodeSubmit);
@@ -242,6 +254,7 @@ function startGame() {
     
     gameTime = new Date(gameState.gameTime);
     restoreUIState();
+    updateTrophyUI();
     gameLoopInterval = setInterval(gameLoop, 250);
     startPriceUpdateLoops();
     animate();
@@ -421,6 +434,53 @@ function updateWeatherAlmanacUI() {
         dom.weatherAlmanacContent.appendChild(el);
     }
 }
+function updateTrophyUI() {
+    if (!dom.trophyList) return;
+    dom.trophyList.innerHTML = '';
+    
+    for (const trophyKey in TROPHY_DATA) {
+        const trophy = TROPHY_DATA[trophyKey as keyof typeof TROPHY_DATA];
+        const isUnlocked = trophy.isUnlocked(gameState);
+
+        const el = document.createElement('div');
+        el.className = `bg-gray-600 p-3 rounded-lg flex items-center gap-4 transition-opacity ${isUnlocked ? '' : 'opacity-40'}`;
+
+        if (isUnlocked) {
+            el.innerHTML = `
+                <span class="text-3xl">${trophy.icon}</span>
+                <div>
+                    <h4 class="font-bold text-yellow-300">${trophy.name}</h4>
+                    <p class="text-xs text-gray-300">${trophy.desc}</p>
+                    <p class="text-xs text-green-400 mt-1">효과: ${trophy.reward}</p>
+                </div>`;
+        } else {
+            el.innerHTML = `
+                <span class="text-3xl">❓</span>
+                <div>
+                    <h4 class="font-bold text-gray-400">???</h4>
+                    <p class="text-xs text-gray-500">잠금 해제 조건이 충족되지 않았습니다.</p>
+                </div>`;
+        }
+        dom.trophyList.appendChild(el);
+    }
+}
+function checkTrophies() {
+    const state = gameState;
+    // Weather Master Trophy
+    if (!state.hasWeatherTrophy) {
+        const totalWeatherTypes = Object.keys(WEATHER_DATA).length;
+        const experiencedWeatherTypes = Object.keys(state.experiencedWeathers).length;
+
+        if (experiencedWeatherTypes >= totalWeatherTypes) {
+            state.hasWeatherTrophy = true;
+            const trophyName = TROPHY_DATA.weatherMaster.name;
+            showNotification(`트로피 획득: ${trophyName}!`, false);
+            updateTrophyUI();
+            saveGameState();
+        }
+    }
+}
+
 function getNewPrice(currentPrice: number, coinId: string) {
     const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     
@@ -590,10 +650,18 @@ function gameLoop() {
             newWeather = '구름';
             state.nextWeatherIsCloudy = false;
         } else {
+            let baseProbSunny = 0.6;
+            let baseProbRain = 0.3; // total 0.9 for sunny+rain
+
+            if (state.hasWeatherTrophy) {
+                // 좋은 날씨 (맑음, 비) 확률 2.5% 증가
+                baseProbSunny += 0.015;
+                baseProbRain += 0.010;
+            }
             const rand = Math.random();
-            if (rand < 0.6) {
+            if (rand < baseProbSunny) {
                 newWeather = '맑음';
-            } else if (rand < 0.9) {
+            } else if (rand < baseProbSunny + baseProbRain) {
                 newWeather = '비';
                 if (Math.random() < 0.1) { newWeather = '산성비'; }
                 state.nextWeatherIsCloudy = true;
@@ -611,6 +679,7 @@ function gameLoop() {
         }
         
         state.experiencedWeathers[state.weather] = true;
+        checkTrophies();
         updateWeatherAlmanacUI();
     }
     // Internet Outage
