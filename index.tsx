@@ -858,6 +858,42 @@ function handleCodeSubmit() {
     }
 }
 
+/**
+ * Safely merges loaded game data with the initial state to prevent data loss on updates.
+ * It ensures new state properties are added and handles nested objects correctly.
+ * @param loadedData The game state data loaded from localStorage.
+ * @returns A clean, merged game state object.
+ */
+function migrateAndMergeState(loadedData: any): any {
+    const initialState = getInitialGameState();
+    const migratedState: any = {};
+
+    for (const key in initialState) {
+        if (Object.prototype.hasOwnProperty.call(initialState, key)) {
+            const initialValue = initialState[key as keyof typeof initialState];
+            const loadedValue = loadedData[key];
+
+            if (loadedValue !== undefined) {
+                 // Special handling for nested plain objects to merge them
+                if (
+                    typeof initialValue === 'object' && initialValue !== null && !Array.isArray(initialValue) &&
+                    typeof loadedValue === 'object' && loadedValue !== null && !Array.isArray(loadedValue)
+                ) {
+                    migratedState[key] = { ...initialValue, ...loadedValue };
+                } else {
+                    // For primitives, arrays, or mismatched types, prefer the saved value
+                    migratedState[key] = loadedValue;
+                }
+            } else {
+                // If no saved value, use the default from the initial state
+                migratedState[key] = initialValue;
+            }
+        }
+    }
+    
+    return migratedState;
+}
+
 async function saveGameState() {
     try {
         gameState.lastOnlineTimestamp = Date.now();
@@ -872,9 +908,17 @@ async function loadGameState() {
         const savedStateJSON = localStorage.getItem(`cubeCoinSimGameState`);
 
         if (savedStateJSON) {
-            const loadedData = JSON.parse(savedStateJSON);
-            const initialState = getInitialGameState();
-            gameState = { ...initialState, ...loadedData };
+            let loadedData = {};
+            try {
+                loadedData = JSON.parse(savedStateJSON);
+            } catch (e) {
+                console.error("저장된 데이터를 파싱하는 중 오류 발생, 게임 상태를 초기화합니다.", e);
+                gameState = getInitialGameState();
+                await saveGameState();
+                return false;
+            }
+            
+            gameState = migrateAndMergeState(loadedData);
             
             const now = Date.now();
             if (gameState.lastOnlineTimestamp) {
