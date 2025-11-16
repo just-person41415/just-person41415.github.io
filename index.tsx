@@ -1,5 +1,18 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    User
+} from "firebase/auth";
+
 // FIX: Add declarations for global variables and extend Window interface to avoid TypeScript errors.
 declare var Chart: any;
+declare var THREE: any;
 
 declare global {
     interface Window {
@@ -22,10 +35,12 @@ const WEATHER_DATA = {
 let gameLoopInterval: number | null = null;
 let priceUpdateTimeout: number | null = null;
 let gameTime: Date;
+let currentUser: User | null = null;
 // FIX: Changed to `any` to allow dynamic property assignment and avoid type errors.
 let dom: any = {};
 
 // --- 3D 렌더링 관련 ---
+let scene: any, camera: any, renderer: any, cube: any;
 let chartCube: any, chartLunar: any, chartEnergy: any, chartPrism: any;
 
 // --- 게임 상태 관리 ---
@@ -68,10 +83,86 @@ const getInitialGameState = () => ({
 
 gameState = getInitialGameState();
 
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAMkZ-JoMxZEc2mXbIlZfhf_bVr-wLSHjo",
+  authDomain: "cube-coin-simulator.firebaseapp.com",
+  projectId: "cube-coin-simulator",
+  storageBucket: "cube-coin-simulator.firebasestorage.app",
+  messagingSenderId: "734525632764",
+  appId: "1:734525632764:web:ba9263fefeeca5726b6779",
+  measurementId: "G-LD98Y6BZ3H"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const auth = getAuth(app);
+
+// =======================================================
+// 3D 렌더링
+// =======================================================
+function init3D() {
+    const container = document.getElementById('cube-container');
+    if (!container) return;
+    // Clear previous renderer
+    while (container.firstChild) {
+        container.removeChild(container.firstChild);
+    }
+
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.z = 3.5;
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    container.appendChild(renderer.domElement);
+
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    const material = new THREE.MeshStandardMaterial({
+        color: 0x60a5fa,
+        metalness: 0.6,
+        roughness: 0.4,
+        emissive: 0x102040,
+    });
+    cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+    
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 1);
+    pointLight.position.set(5, 5, 5);
+    scene.add(pointLight);
+
+    window.addEventListener('resize', () => {
+        if (!container.clientWidth || !container.clientHeight || !renderer) return;
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+    }, false);
+}
+
+function animate() {
+    if (!currentUser) return; // Stop animation if logged out
+    requestAnimationFrame(animate);
+    if (cube) {
+        cube.rotation.x += 0.003;
+        cube.rotation.y += 0.003;
+    }
+    if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+    }
+}
+
 // =======================================================
 // 게임 로직
 // =======================================================
 function initCharts() {
+    if (chartCube) chartCube.destroy();
+    if (chartLunar) chartLunar.destroy();
+    if (chartEnergy) chartEnergy.destroy();
+    if (chartPrism) chartPrism.destroy();
+
     const commonOptions = { scales: { y: { ticks: { color: '#9ca3af' }, grid: { color: '#4b5563' } }, x: { ticks: { color: '#9ca3af' }, grid: { color: '#4b5563' } } }, plugins: { legend: { display: false } }, maintainAspectRatio: false };
     const createChart = (id: string, borderColor: string, label: string) => {
         const ctx = (document.getElementById(id) as HTMLCanvasElement)?.getContext('2d');
@@ -97,7 +188,9 @@ function updateChartData(chart: any, price: number, time: string) {
 }
 
 function initGame() {
+    // DOM queries that are part of the main game UI
     dom = {
+        ...dom, // Keep auth dom elements
         userCash: document.getElementById('user-cash'), userCubes: document.getElementById('user-cubes'), userLunar: document.getElementById('user-lunar'), userEnergy: document.getElementById('user-energy'), userPrisms: document.getElementById('user-prisms'),
         currentCubePrice: document.getElementById('current-cube-price'), cubePriceChange: document.getElementById('cube-price-change'),
         currentLunarPrice: document.getElementById('current-lunar-price'), lunarPriceChange: document.getElementById('lunar-price-change'),
@@ -118,6 +211,8 @@ function initGame() {
         upgradePrismSection: document.getElementById('upgrade-prism-section'), upgradePrismButton: document.getElementById('upgrade-prism-button'),
         weatherAlmanacSection: document.getElementById('weather-almanac-section'), weatherAlmanacContent: document.getElementById('weather-almanac-content'),
         incomeSourceUpgrades: document.getElementById('income-source-upgrades'),
+        userInfo: document.getElementById('user-info'),
+        logoutButton: document.getElementById('logout-button'),
     };
     ['assets', 'income', 'computer', 'almanac', 'shop', 'trade', 'charts', 'code', 'sleep'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
@@ -127,10 +222,13 @@ function initGame() {
     if (dom.upgradeLunarButton) dom.upgradeLunarButton.addEventListener('click', handleUpgradeLunar);
     if (dom.upgradeEnergyButton) dom.upgradeEnergyButton.addEventListener('click', handleUpgradeEnergy);
     if (dom.upgradePrismButton) dom.upgradePrismButton.addEventListener('click', handleUpgradePrism);
+    if (dom.logoutButton) dom.logoutButton.addEventListener('click', handleLogout);
     ['cube', 'lunar', 'energy', 'prism'].forEach(c => dom[`chartTab${c.charAt(0).toUpperCase() + c.slice(1)}`]?.addEventListener('click', () => switchChart(c)));
+    
     populateTradeUI();
     populateShopItems();
     initCharts();
+    init3D();
 }
 
 function startGame() {
@@ -140,6 +238,7 @@ function startGame() {
     restoreUIState();
     gameLoopInterval = setInterval(gameLoop, 250);
     priceUpdateLoop();
+    animate();
 }
 
 function showNotification(message: string, isError = true) {
@@ -370,7 +469,6 @@ function gameLoop() {
     // Internet Outage (Effect Disabled)
     if (state.isInternetOutage && now > state.isInternetOutageCooldown) {
          state.isInternetOutage = false; 
-         // showNotification('인터넷 연결이 복구되었습니다.', false); 
     }
     if (dom.internetOutage) dom.internetOutage.classList.add('hidden');
     
@@ -381,8 +479,8 @@ function gameLoop() {
     const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
     state.userCash += (baseProduction + lunarBonus) / 4;
 
-    // Mining (Probabilistic) - per minute, so check every 240 ticks (250ms * 240 = 60s)
-    if(state.weatherCounter % 240 === 0) { // Check once per game minute
+    // Mining (Probabilistic)
+    if(state.weatherCounter % 240 === 0) {
       const tier = state.computerTier;
       if (tier > 0) {
           if (Math.random() < tier * 0.04) state.userCubes++;
@@ -433,30 +531,21 @@ function handleUpgradeEnergy() { const state = gameState; if (state.userEnergy >
 function handleUpgradePrism() { const state = gameState; if (state.userPrisms >= 100) { state.userPrisms -= 100; state.isPrismUpgraded = true; restoreUIState(); showNotification('PRISM 강화 완료!', false); saveGameState(); } else { showNotification('PRISM이 부족합니다.', true); } }
 function handleSleep() {
     const state = gameState;
-    if (!state.shopItems.bed) {
-        showNotification('침대가 없어서 잘 수 없습니다. 상점에서 구매하세요.', true);
-        return;
-    }
+    if (!state.shopItems.bed) { showNotification('침대가 없어서 잘 수 없습니다. 상점에서 구매하세요.', true); return; }
     const currentHour = gameTime.getHours();
-    if (state.isSleeping || (currentHour < 20 && currentHour >= 8)) {
-        showNotification('수면은 20시 이후에만 가능합니다.', true);
-        return;
-    }
+    if (state.isSleeping || (currentHour < 20 && currentHour >= 8)) { showNotification('수면은 20시 이후에만 가능합니다.', true); return; }
     state.isSleeping = true;
     showNotification('수면을 시작합니다...', false);
-    if (dom.sleepButton) {
-        dom.sleepButton.textContent = '수면 중...';
-        dom.sleepButton.classList.add('btn-disabled');
-    }
+    if (dom.sleepButton) { dom.sleepButton.textContent = '수면 중...'; dom.sleepButton.classList.add('btn-disabled'); }
     
     setTimeout(() => {
         const hoursToSleep = (32 - gameTime.getHours()) % 24;
         const minutesToSleep = hoursToSleep * 60;
-        const secondsSlept = minutesToSleep * (250/1000); // 1 game minute = 250ms
+        const secondsSlept = minutesToSleep * (250/1000);
         
         let baseProduction = 0;
         if(state.isCubePurchased) { baseProduction = 100; if(state.isPrismUpgraded) baseProduction = 400; else if(state.isEnergyUpgraded) baseProduction = 200; }
-        const lunarBonus = (state.isLunarUpgraded) ? 100 : 0; // Sleep is always at night
+        const lunarBonus = (state.isLunarUpgraded) ? 100 : 0;
         const totalIncomePerSecond = baseProduction + lunarBonus;
         state.userCash += totalIncomePerSecond * secondsSlept;
         
@@ -471,10 +560,7 @@ function handleSleep() {
         state.isSleeping = false;
         gameTime.setHours(8, 0, 0, 0);
         showNotification('좋은 아침입니다!', false);
-        if (dom.sleepButton) {
-            dom.sleepButton.textContent = '수면';
-            dom.sleepButton.classList.remove('btn-disabled');
-        }
+        if (dom.sleepButton) { dom.sleepButton.textContent = '수면'; dom.sleepButton.classList.remove('btn-disabled'); }
         updateUI();
         saveGameState().catch(e => console.error("Save failed after sleep:", e));
     }, 3000);
@@ -524,6 +610,10 @@ function handleCodeSubmit() {
          restoreUIState();
          showNotification('치트 코드: 모든 코인 업그레이드 잠금 해제!', false);
          rewardGiven = true;
+    } else if (code === 'SORRY4DELAY') {
+        gameState.userCubes += 20;
+        showNotification('보상 코드: 20 CUBE 코인을 획득했습니다!', false);
+        rewardGiven = true;
     } else {
         showNotification('유효하지 않은 코드입니다.', true);
     }
@@ -537,35 +627,34 @@ function handleCodeSubmit() {
 }
 
 async function saveGameState() {
+    if (!currentUser) return;
     try {
         gameState.lastOnlineTimestamp = Date.now();
-        localStorage.setItem('cubeCoinSimGameState', JSON.stringify(gameState));
+        localStorage.setItem(`cubeCoinSimGameState_${currentUser.uid}`, JSON.stringify(gameState));
     } catch (error) {
         console.error("localStorage에 게임 상태 저장 실패:", error);
     }
 }
 
 async function loadGameState() {
+    if (!currentUser) return false;
     try {
-        const savedStateJSON = localStorage.getItem('cubeCoinSimGameState');
+        const savedStateJSON = localStorage.getItem(`cubeCoinSimGameState_${currentUser.uid}`);
 
         if (savedStateJSON) {
             const loadedData = JSON.parse(savedStateJSON);
             const initialState = getInitialGameState();
-            // Merge saved data with initial state to prevent issues with new properties
             gameState = { ...initialState, ...loadedData };
             
-            // AFK Progress
             const now = Date.now();
             if (gameState.lastOnlineTimestamp) {
                 const offlineSeconds = (now - gameState.lastOnlineTimestamp) / 1000;
-                if (offlineSeconds > 5) { // 5초 이상 오프라인이었을 경우만 계산
+                if (offlineSeconds > 5) {
                     let offlineCash = 0;
                     if(gameState.isCubePurchased) {
                         let avgBaseProd = 100;
                         if (gameState.isPrismUpgraded) avgBaseProd = 400;
                         else if (gameState.isEnergyUpgraded) avgBaseProd = 200;
-                        // Night is 14/24 hours of the day
                         const avgLunarBonus = gameState.isLunarUpgraded ? (100 * (14 / 24)) : 0;
                         offlineCash = offlineSeconds * (avgBaseProd + avgLunarBonus);
                     }
@@ -599,20 +688,79 @@ async function loadGameState() {
 }
 
 // =======================================================
+// 인증 로직
+// =======================================================
+function handleLogout() {
+    signOut(auth).catch((error) => {
+        console.error('Logout failed', error);
+    });
+}
+
+// =======================================================
 // 앱 초기화
 // =======================================================
-document.addEventListener('DOMContentLoaded', async () => {
-    const mainContent = document.getElementById('main-content');
-    if (mainContent) {
-        mainContent.classList.remove('hidden');
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    dom = {
+        authContainer: document.getElementById('auth-container'),
+        mainContent: document.getElementById('main-content'),
+        loginForm: document.getElementById('login-form'),
+        registerForm: document.getElementById('register-form'),
+        authToggleLink: document.getElementById('auth-toggle-link'),
+        authModeText: document.getElementById('auth-mode-text'),
+        authError: document.getElementById('auth-error'),
+    };
 
-    await loadGameState();
-    initGame();
-    startGame();
+    dom.authToggleLink.addEventListener('click', (e: Event) => {
+        e.preventDefault();
+        dom.loginForm.classList.toggle('hidden');
+        dom.registerForm.classList.toggle('hidden');
+        const isLogin = !dom.loginForm.classList.contains('hidden');
+        dom.authModeText.textContent = isLogin ? '로그인하여 게임 시작' : '새 계정 생성';
+        dom.authToggleLink.textContent = isLogin ? '계정이 없으신가요? 회원가입' : '이미 계정이 있으신가요? 로그인';
+        dom.authError.textContent = '';
+    });
 
-    if (window.autosaveInterval) clearInterval(window.autosaveInterval);
-    window.autosaveInterval = setInterval(saveGameState, 30000);
+    dom.loginForm.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        const email = (document.getElementById('login-email') as HTMLInputElement).value;
+        const password = (document.getElementById('login-password') as HTMLInputElement).value;
+        signInWithEmailAndPassword(auth, email, password)
+            .catch(error => { dom.authError.textContent = error.message; });
+    });
+
+    dom.registerForm.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        const email = (document.getElementById('register-email') as HTMLInputElement).value;
+        const password = (document.getElementById('register-password') as HTMLInputElement).value;
+        createUserWithEmailAndPassword(auth, email, password)
+            .catch(error => { dom.authError.textContent = error.message; });
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            dom.authContainer.classList.add('hidden');
+            dom.mainContent.classList.remove('hidden');
+            
+            initGame(); // initGame needs to be called to get user-info element
+            if (dom.userInfo) dom.userInfo.textContent = `${user.email}`;
+
+            await loadGameState();
+            startGame();
+
+            if (window.autosaveInterval) clearInterval(window.autosaveInterval);
+            window.autosaveInterval = setInterval(saveGameState, 30000);
+        } else {
+            currentUser = null;
+            dom.authContainer.classList.remove('hidden');
+            dom.mainContent.classList.add('hidden');
+
+            if (gameLoopInterval) clearInterval(gameLoopInterval);
+            if (priceUpdateTimeout) clearTimeout(priceUpdateTimeout);
+            if (window.autosaveInterval) clearInterval(window.autosaveInterval);
+            gameState = getInitialGameState();
+        }
+    });
 });
 // FIX: Add empty export to treat this file as a module, enabling global declarations.
 export {};
