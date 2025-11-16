@@ -30,8 +30,41 @@ const TROPHY_DATA = {
     }
 };
 
+const CROP_DATA: { [key: string]: { name: string, krName: string, icon: string, cost: number, sellPrice: number, growthTime: number } } = {
+    rice: { name: 'Rice Seed', krName: '벼', icon: '🌾', cost: 400, sellPrice: 1, growthTime: 10 * 1000 },
+    carrot: { name: 'Carrot Seed', krName: '당근', icon: '🥕', cost: 1000, sellPrice: 3, growthTime: 20 * 1000 },
+    tomato: { name: 'Tomato Seed', krName: '토마토', icon: '🍅', cost: 2000, sellPrice: 6, growthTime: 30 * 1000 },
+    pumpkin: { name: 'Pumpkin Seed', krName: '호박', icon: '🎃', cost: 4000, sellPrice: 15, growthTime: 60 * 1000 },
+    watermelon: { name: 'Watermelon Seed', krName: '수박', icon: '🍉', cost: 10000, sellPrice: 40, growthTime: 120 * 1000 },
+    grape: { name: 'Grape Seed', krName: '포도', icon: '🍇', cost: 20000, sellPrice: 100, growthTime: 180 * 1000 },
+    strawberry: { name: 'Strawberry Seed', krName: '딸기', icon: '🍓', cost: 30000, sellPrice: 150, growthTime: 360 * 1000 },
+    banana: { name: 'Banana Seed', krName: '바나나', icon: '🍌', cost: 40000, sellPrice: 200, growthTime: 480 * 1000 },
+    apple: { name: 'Apple Seed', krName: '사과', icon: '🍎', cost: 60000, sellPrice: 300, growthTime: 720 * 1000 },
+    lemon: { name: 'Lemon Seed', krName: '레몬', icon: '🍋', cost: 80000, sellPrice: 500, growthTime: 1200 * 1000 },
+};
+
+// FIX: Add an explicit type for FARM_ITEM_DATA to make the 'requires' property optional, resolving TypeScript errors.
+const FARM_ITEM_DATA: { [key: string]: { name: string; krName: string; icon: string; desc: string; cost: number; quantity: number; requires?: string; } } = {
+    wateringCan: { name: '물뿌리개', krName: '물뿌리개', icon: '💧', desc: '6시간(게임) 동안 모든 작물 성장 속도 1.5배 증가', cost: 10000, quantity: 5 },
+    artificialFertilizer: { name: '인공 비료', krName: '인공 비료', icon: '🧪', desc: '12시간(게임) 동안 성장 속도 2배, 판매가 1.5배 감소', cost: 20000, quantity: 3 },
+    sprinkler: { name: '스프링클러', krName: '스프링클러', icon: '🚿', desc: '농장 전체 작물의 성장 속도를 영구적으로 1.5배 증가시킵니다.', cost: 100000, quantity: 1 },
+    acidFertilizer: { name: '산성 비료', krName: '산성 비료', icon: '☢️', desc: '산성비일 때만 사용 가능. 6시간(게임) 동안 성장 속도 5배, 먹이 사용 불가, 판매가 2 감소.', cost: 20000, quantity: 1, requires: '산성비' },
+};
+
+const VPN_MULTIPLIERS = [0.01, 0.012, 0.014, 0.016, 0.018, 0.02];
+const getVpnMultiplier = (level: number) => VPN_MULTIPLIERS[level] || VPN_MULTIPLIERS[0];
+
+const SKILL_DATA: { [key: string]: { name: string, maxTier: number, costs: number[], description: (level: number) => string, category: 'cube' | 'farm' } } = {
+    cube_efficiency: { name: '효율성 증가', maxTier: 5, costs: [20, 100, 400, 1200, 2400], description: level => `3D 큐브 생산량 +${(level + 1) * 10}%`, category: 'cube' },
+    cube_exceptional: { name: '특출남 확률 증가', maxTier: 5, costs: [20, 80, 240, 720, 2160], description: level => `'특출남' 상태 발동 확률 계산 시 배고픔 나누기 수치 +${level + 1}`, category: 'cube' },
+    cube_vpn: { name: 'VPN', maxTier: 5, costs: [100, 1000, 5000, 15000, 30000], description: level => `오프라인(AFK) 수익 배율을 ${(getVpnMultiplier(level) * 100).toFixed(1)}%로 적용`, category: 'cube' },
+    farm_fertilizer: { name: '친환경 비료', maxTier: 5, costs: [10, 30, 90, 270, 810], description: level => `작물 성장 시간 -${(level + 1) * 5}%`, category: 'farm' },
+    farm_lucky_harvest: { name: '행운 수확', maxTier: 5, costs: [5, 25, 125, 625, 3125], description: level => `수확 시 +${(level + 1) * 5}% 확률로 작물 2개 획득`, category: 'farm' },
+    farm_expand: { name: '토지 늘리기', maxTier: 2, costs: [1000, 5000], description: level => `농장 크기를 ${3 + level + 1}x${3 + level + 1}으로 확장`, category: 'farm' },
+};
 
 let gameLoopInterval: number | null = null;
+let miningInterval: number | null = null;
 let priceUpdateTimeoutCube: number | null = null;
 let priceUpdateTimeoutLunar: number | null = null;
 let priceUpdateTimeoutEnergy: number | null = null;
@@ -39,6 +72,7 @@ let priceUpdateTimeoutPrism: number | null = null;
 let gameTime: Date;
 // FIX: Changed to `any` to allow dynamic property assignment and avoid type errors.
 let dom: any = {};
+let selectedSeed: string | null = null;
 
 // --- 3D 렌더링 관련 ---
 let scene: any, camera: any, renderer: any, cube: any;
@@ -54,6 +88,7 @@ const getInitialGameState = () => ({
     userLunar: 0,
     userEnergy: 0,
     userPrisms: 0,
+    farmCoin: 0,
     currentPrice: 10000,
     lastPrice: 10000,
     currentLunarPrice: 20000,
@@ -82,6 +117,20 @@ const getInitialGameState = () => ({
     lastOnlineTimestamp: Date.now(),
     hasWeatherTrophy: false,
     transactionHistory: [],
+    farmPlots: Array(9).fill(null),
+    inventory: {
+        wateringCan: 0,
+        artificialFertilizer: 0,
+        acidFertilizer: 0,
+    },
+    farmBuffs: {},
+    hasSprinkler: false,
+    seedInventory: {},
+    skills: {
+        cube_efficiency: 0, cube_exceptional: 0, cube_vpn: 0,
+        farm_fertilizer: 0, farm_lucky_harvest: 0, farm_expand: 0,
+    },
+    exceptionalState: { isActive: false, expiresAt: 0 },
 });
 
 gameState = getInitialGameState();
@@ -176,19 +225,20 @@ function updateChartData(chart: any, price: number, time: string) {
 function initGame() {
     // DOM queries that are part of the main game UI
     dom = {
-        userCash: document.getElementById('user-cash'), userCubes: document.getElementById('user-cubes'), userLunar: document.getElementById('user-lunar'), userEnergy: document.getElementById('user-energy'), userPrisms: document.getElementById('user-prisms'),
+        userCash: document.getElementById('user-cash'), userCubes: document.getElementById('user-cubes'), userLunar: document.getElementById('user-lunar'), userEnergy: document.getElementById('user-energy'), userPrisms: document.getElementById('user-prisms'), userFarmCoin: document.getElementById('user-farm-coin'),
         currentCubePrice: document.getElementById('current-cube-price'), cubePriceChange: document.getElementById('cube-price-change'),
         currentLunarPrice: document.getElementById('current-lunar-price'), lunarPriceChange: document.getElementById('lunar-price-change'),
         currentEnergyPrice: document.getElementById('current-energy-price'), energyPriceChange: document.getElementById('energy-price-change'),
         currentPrismPrice: document.getElementById('current-prism-price'), prismPriceChange: document.getElementById('prism-price-change'),
         notification: document.getElementById('notification'), internetOutage: document.getElementById('internet-outage'),
         buyCubeButton: document.getElementById('buy-cube-button'), cubePurchaseOverlay: document.getElementById('cube-purchase-overlay'), passiveIncomeDisplay: document.getElementById('passive-income-display'), incomePerSecond: document.getElementById('income-per-second'),
+        exceptionalStatus: document.getElementById('exceptional-status'), exceptionalTimer: document.getElementById('exceptional-timer'),
         computerInfo: document.getElementById('computer-info'), computerTierText: document.getElementById('computer-tier-text'), computerStatsText: document.getElementById('computer-stats-text'), computerUpgradeButton: document.getElementById('computer-upgrade-button'),
         tradeContainer: document.getElementById('trade-container'),
         chartTabCube: document.getElementById('chart-tab-cube'), chartTabLunar: document.getElementById('chart-tab-lunar'), chartTabEnergy: document.getElementById('chart-tab-energy'), chartTabPrism: document.getElementById('chart-tab-prism'),
         chartCubeContainer: document.getElementById('chart-cube-container'), chartLunarContainer: document.getElementById('chart-lunar-container'), chartEnergyContainer: document.getElementById('chart-energy-container'), chartPrismContainer: document.getElementById('chart-prism-container'),
         timeContainer: document.getElementById('time-container'), gameTime: document.getElementById('game-time'), weatherContainer: document.getElementById('weather-container'), weatherDisplay: document.getElementById('weather-display'),
-        shopSection: document.getElementById('shop-section'), shopItems: document.getElementById('shop-items'),
+        shopSection: document.getElementById('shop-section'), shopItems: document.getElementById('shop-items'), farmShopItems: document.getElementById('farm-shop-items'),
         codeSubmitButton: document.getElementById('code-submit-button'), codeInput: document.getElementById('code-input'),
         upgradeLunarSection: document.getElementById('upgrade-lunar-section'), upgradeLunarButton: document.getElementById('upgrade-lunar-button'),
         upgradeEnergySection: document.getElementById('upgrade-energy-section'), upgradeEnergyButton: document.getElementById('upgrade-energy-button'),
@@ -197,8 +247,10 @@ function initGame() {
         incomeSourceUpgrades: document.getElementById('income-source-upgrades'),
         trophyList: document.getElementById('trophy-list'),
         transactionHistoryList: document.getElementById('transaction-history-list'),
+        farmPlotSection: document.getElementById('farm-plot-section'), seedShopContainer: document.getElementById('seed-shop-container'), inventoryContainer: document.getElementById('inventory-container'),
+        skillsCubeContainer: document.getElementById('skills-cube-container'), skillsFarmContainer: document.getElementById('skills-farm-container'),
     };
-    ['assets', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
+    ['assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
     if (dom.computerUpgradeButton) dom.computerUpgradeButton.addEventListener('click', handleComputerUpgrade);
     if (dom.codeSubmitButton) dom.codeSubmitButton.addEventListener('click', handleCodeSubmit);
@@ -209,12 +261,16 @@ function initGame() {
     
     populateTradeUI();
     populateShopItems();
+    populateFarmShop();
     initCharts();
     init3D();
+    updateFarmUI();
+    updateSkillsUI();
 }
 
 function startGame() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
+    if (miningInterval) clearInterval(miningInterval);
     if (priceUpdateTimeoutCube) clearTimeout(priceUpdateTimeoutCube);
     if (priceUpdateTimeoutLunar) clearTimeout(priceUpdateTimeoutLunar);
     if (priceUpdateTimeoutEnergy) clearTimeout(priceUpdateTimeoutEnergy);
@@ -225,6 +281,7 @@ function startGame() {
     updateTrophyUI();
     updateTransactionHistoryUI();
     gameLoopInterval = setInterval(gameLoop, 250);
+    miningInterval = setInterval(handleMining, 60000); // 1분마다 채굴
     startPriceUpdateLoops();
     animate();
 }
@@ -242,6 +299,7 @@ function updateUI() {
     const state = gameState;
     if (!dom.userCash) return;
     dom.userCash.textContent = Math.floor(state.userCash).toLocaleString('ko-KR');
+    dom.userFarmCoin.textContent = Math.floor(state.farmCoin).toLocaleString('ko-KR');
     dom.userCubes.textContent = Math.floor(state.userCubes).toLocaleString('ko-KR');
     dom.userLunar.textContent = Math.floor(state.userLunar).toLocaleString('ko-KR');
     dom.userEnergy.textContent = Math.floor(state.userEnergy).toLocaleString('ko-KR');
@@ -263,17 +321,32 @@ function updateUI() {
 
     if (dom.weatherDisplay) dom.weatherDisplay.textContent = `${state.weather} ${WEATHER_DATA[state.weather].icon}`;
 
-    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     let baseProduction = 0;
     if (state.isCubePurchased) {
         baseProduction = 100;
         if (state.isPrismUpgraded) baseProduction = 400;
         else if (state.isEnergyUpgraded) baseProduction = 200;
     }
+    // 스킬 효과 적용
+    baseProduction *= (1 + state.skills.cube_efficiency * 0.1);
+    
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
-    const totalIncome = baseProduction + lunarBonus;
+    let totalIncome = baseProduction + lunarBonus;
 
-    if (dom.incomePerSecond) dom.incomePerSecond.textContent = `+${totalIncome.toLocaleString('ko-KR')} KRW / sec`;
+    // 특출남 상태 효과 적용
+    if (state.exceptionalState.isActive) {
+        totalIncome *= 2;
+        dom.exceptionalStatus.classList.remove('hidden');
+        const timeLeft = Math.max(0, state.exceptionalState.expiresAt - Date.now());
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        dom.exceptionalTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} 남음`;
+    } else {
+        dom.exceptionalStatus.classList.add('hidden');
+    }
+
+    if (dom.incomePerSecond) dom.incomePerSecond.textContent = `+${totalIncome.toLocaleString('ko-KR', { maximumFractionDigits: 0 })} KRW / sec`;
 
     if (dom.gameTime) {
         const gameHours = gameTime.getHours();
@@ -287,14 +360,14 @@ function updateComputerUI() {
     if (!dom.computerTierText || !dom.computerStatsText || !dom.computerUpgradeButton) return;
     const tier = gameState.computerTier;
     const tiers = [
-        { name: '컴퓨터 없음', cost: 50000, next: 'Tier 1 구매' },
-        { name: 'Tier 1 컴퓨터', cost: 250000, next: 'Tier 2 업그레이드' },
-        { name: 'Tier 2 컴퓨터', cost: 500000, next: 'Tier 3 업그레이드' },
-        { name: 'Tier 3 컴퓨터', cost: 1200000, next: 'Tier 4 업그레이드' },
-        { name: 'Tier 4 컴퓨터', cost: 2000000, next: 'Tier 5 업그레이드' },
-        { name: 'Tier 5 컴퓨터', cost: Infinity, next: '최고 티어' }
+        { name: '컴퓨터 없음', cost: 250000, next: 'Tier 1 구매' },
+        { name: 'Tier 1 컴퓨터', cost: 1000000, next: 'Tier 2 업그레이드' },
+        { name: 'Tier 2 컴퓨터', cost: 2500000, next: 'Tier 3 업그레이드' },
+        { name: 'Tier 3 컴퓨터', cost: 5000000, next: 'Tier 4 업그레이드' },
+        { name: 'Tier 4 컴퓨터', cost: 10000000, next: 'Tier 5 업그레이드' },
+        { name: 'Tier 5 컴퓨터', cost: 0, next: '최고 티어' }
     ];
-    const miningRates = tier > 0 ? `<br>채굴 확률 (분당):<br>CUBE: ${tier*4}%, LUNAR: ${tier*3}%<br>ENERGY: ${tier*2}%, PRISM: ${tier*1}%` : '';
+    const miningRates = tier > 0 ? `<br>채굴 확률 (분당):<br>CUBE: ${tier*2}%, LUNAR: ${tier*1.5}%<br>ENERGY: ${tier*1}%, PRISM: ${tier*0.5}%` : '';
     dom.computerTierText.textContent = tiers[tier].name;
     dom.computerStatsText.innerHTML = `자동 채굴 활성화${miningRates}`;
     if (tier < 5) {
@@ -338,7 +411,7 @@ function populateShopItems() {
     ];
     items.forEach(item => {
         const el = document.createElement('div');
-        el.className = 'bg-gray-600 p-4 rounded-lg';
+        el.className = 'bg-gray-600 p-4 rounded-lg flex flex-col justify-between';
         
         let buttonHtml: string;
         const isBedAndOwned = item.id === 'bed' && gameState.shopItems.bed;
@@ -353,8 +426,10 @@ function populateShopItems() {
         }
 
         el.innerHTML = `
-            <h4 class="font-bold text-lg">${item.name}</h4>
-            <p class="text-xs text-gray-400 mt-1 mb-3 h-10">${item.desc}</p>
+            <div>
+                <h4 class="font-bold text-lg">${item.name}</h4>
+                <p class="text-xs text-gray-400 mt-1 mb-3 h-10">${item.desc}</p>
+            </div>
             ${buttonHtml}
         `;
         container.appendChild(el);
@@ -640,6 +715,7 @@ function gameLoop() {
             }
         }
         state.weather = newWeather;
+        populateFarmShop(); // 날씨가 바뀌면 상점 다시 그림 (산성비료)
 
         if (state.weather === '천둥' && Math.random() < 0.05) {
             state.isInternetOutage = true;
@@ -659,24 +735,74 @@ function gameLoop() {
     if (dom.internetOutage) dom.internetOutage.classList.toggle('hidden', !state.isInternetOutage);
     
     // Income
-    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     let baseProduction = 0;
     if(state.isCubePurchased) { baseProduction = 100; if(state.isPrismUpgraded) baseProduction = 400; else if(state.isEnergyUpgraded) baseProduction = 200; }
-    const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
-    state.userCash += (baseProduction + lunarBonus) / 4;
+    baseProduction *= (1 + state.skills.cube_efficiency * 0.1);
 
-    // Mining (Probabilistic)
-    if(state.weatherCounter % 240 === 0) {
-      const tier = state.computerTier;
-      if (tier > 0) {
-          if (Math.random() < tier * 0.04) state.userCubes++;
-          if (Math.random() < tier * 0.03) state.userLunar++;
-          if (Math.random() < tier * 0.02) state.userEnergy++;
-          if (Math.random() < tier * 0.01) state.userPrisms++;
-      }
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+    const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
+    let totalIncome = baseProduction + lunarBonus;
+    
+    if (state.exceptionalState.isActive) {
+        if (Date.now() > state.exceptionalState.expiresAt) {
+            state.exceptionalState.isActive = false;
+        } else {
+            totalIncome *= 2;
+        }
+    }
+    state.userCash += totalIncome / 4;
+
+    // Farm Buffs Expiration
+    for (const buff in state.farmBuffs) {
+        if (gameTime.getTime() > state.farmBuffs[buff].expiresAt) {
+            delete state.farmBuffs[buff];
+            updateInventory(); // Buff has expired, update UI
+        }
     }
 
+    // Farming
+    let farmNeedsRedraw = false;
+    state.farmPlots.forEach((plot: any, i: number) => {
+        if (plot && !plot.isGrown) {
+            let growthMultiplier = state.weather === '비' ? 1.5 : 1;
+            if (state.hasSprinkler) growthMultiplier *= 1.5;
+            if (state.farmBuffs.wateringCan) growthMultiplier *= 1.5;
+            if (state.farmBuffs.artificialFertilizer) growthMultiplier *= 2;
+            if (state.farmBuffs.acidFertilizer) growthMultiplier *= 5;
+            
+            plot.currentGrowth += 250 * growthMultiplier;
+
+            if (plot.currentGrowth >= plot.totalGrowthTime) {
+                plot.isGrown = true;
+                plot.currentGrowth = plot.totalGrowthTime;
+                farmNeedsRedraw = true;
+            }
+            
+            // 실시간 게이지 바 업데이트
+            const progressBar = document.getElementById(`progress-bar-${i}`);
+            if(progressBar) {
+                const progress = Math.min(100, (plot.currentGrowth / plot.totalGrowthTime) * 100);
+                progressBar.style.width = `${progress}%`;
+            }
+        }
+    });
+    if (farmNeedsRedraw) {
+        updateFarmUI();
+    }
+
+
     updateUI();
+}
+
+function handleMining() {
+    const state = gameState;
+    const tier = state.computerTier;
+    if (tier > 0) {
+        if (Math.random() < tier * 0.02) state.userCubes++;
+        if (Math.random() < tier * 0.015) state.userLunar++;
+        if (Math.random() < tier * 0.01) state.userEnergy++;
+        if (Math.random() < tier * 0.005) state.userPrisms++;
+    }
 }
 
 function handleTrade(type: 'buy' | 'sell', coinId: string) {
@@ -742,7 +868,7 @@ function handleBuy3DCube() { const state = gameState; if (state.userCash >= 1000
 function handleComputerUpgrade() {
     const state = gameState;
     if (state.isInternetOutage) { showNotification('인터넷 연결이 끊겨 업그레이드할 수 없습니다.', true); return; }
-    const costs = [50000, 250000, 500000, 1200000, 2000000];
+    const costs = [250000, 1000000, 2500000, 5000000, 10000000];
     if (state.computerTier >= 5) return;
     const cost = costs[state.computerTier];
     if (state.userCash >= cost) {
@@ -767,21 +893,17 @@ function handleSleep() {
     setTimeout(() => {
         const hoursToSleep = (32 - gameTime.getHours()) % 24;
         const minutesToSleep = hoursToSleep * 60;
-        const secondsSlept = minutesToSleep * (250/1000);
+        const secondsSlept = minutesToSleep; // 1 game minute = 1 real second
         
         let baseProduction = 0;
         if(state.isCubePurchased) { baseProduction = 100; if(state.isPrismUpgraded) baseProduction = 400; else if(state.isEnergyUpgraded) baseProduction = 200; }
-        const lunarBonus = (state.isLunarUpgraded) ? 100 : 0;
-        const totalIncomePerSecond = baseProduction + lunarBonus;
-        state.userCash += totalIncomePerSecond * secondsSlept;
+        const lunarBonus = (state.isLunarUpgraded) ? 100 : 0; // Avg over day/night
+        let totalIncomePerSecond = baseProduction + lunarBonus;
+
+        const vpnMultiplier = getVpnMultiplier(state.skills.cube_vpn);
+        state.userCash += totalIncomePerSecond * secondsSlept * vpnMultiplier;
         
-        const tier = state.computerTier;
-        if (tier > 0) {
-            state.userCubes += Math.floor(minutesToSleep * tier * 0.04);
-            state.userLunar += Math.floor(minutesToSleep * tier * 0.03);
-            state.userEnergy += Math.floor(minutesToSleep * tier * 0.02);
-            state.userPrisms += Math.floor(minutesToSleep * tier * 0.01);
-        }
+        // Mining is handled by its own interval, so no need to calculate it here.
 
         state.isSleeping = false;
         gameTime.setHours(8, 0, 0, 0);
@@ -806,12 +928,499 @@ function restoreUIState() {
     if (dom.upgradePrismSection) dom.upgradePrismSection.classList.toggle('hidden', !state.isEnergyUpgraded || state.isPrismUpgraded);
 
     updateWeatherAlmanacUI();
+    updateFarmUI();
+    updateSkillsUI();
     updateUI();
 }
 
 // =======================================================
+// 농사 관련 로직
+// =======================================================
+function updateFarmUI() {
+    updateFarmPlots();
+    updateSeedShop();
+    updateInventory();
+}
+function updateFarmPlots() {
+    const container = dom.farmPlotSection;
+    if (!container) return;
+    container.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">내 농장</h3>`;
+
+    const farmSize = 3 + gameState.skills.farm_expand;
+    const grid = document.createElement('div');
+    grid.className = `grid gap-2`;
+    grid.style.gridTemplateColumns = `repeat(${farmSize}, minmax(0, 1fr))`;
+    
+    for (let i = 0; i < gameState.farmPlots.length; i++) {
+        const plotData = gameState.farmPlots[i];
+        const plotEl = document.createElement('div');
+        plotEl.className = 'farm-plot rounded-md cursor-pointer relative flex items-center justify-center';
+        
+        if (!plotData) {
+            plotEl.innerHTML = `<span class="text-3xl text-green-800 opacity-50">+</span>`;
+            plotEl.onclick = () => handlePlant(i);
+        } else {
+            const crop = CROP_DATA[plotData.seedId];
+            const progress = Math.min(100, (plotData.currentGrowth / plotData.totalGrowthTime) * 100);
+
+            let content = `<div class="text-center">
+                <span class="text-4xl">${crop.icon}</span>
+                <div class="absolute bottom-1 left-1 right-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div id="progress-bar-${i}" class="bg-green-500 h-full" style="width: ${progress}%"></div>
+                </div>
+            </div>`;
+
+            if (plotData.isGrown) {
+                content += `<div class="absolute inset-0 bg-black/50 flex items-center justify-center font-bold text-yellow-300">수확!</div>`;
+                plotEl.onclick = () => handleHarvest(i);
+            } else {
+                plotEl.onclick = () => handleRemoveCrop(i);
+            }
+             plotEl.innerHTML = content;
+        }
+        grid.appendChild(plotEl);
+    }
+    container.appendChild(grid);
+}
+function updateSeedShop() {
+    const container = dom.seedShopContainer;
+    if (!container) return;
+    container.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">씨앗 상점</h3><div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2"></div>`;
+    const list = container.querySelector('div');
+
+    for (const seedId in CROP_DATA) {
+        const seed = CROP_DATA[seedId];
+        const el = document.createElement('div');
+        el.className = 'bg-gray-600 p-2 rounded-lg flex items-center justify-between';
+        el.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">${seed.icon}</span>
+                <div>
+                    <p class="font-semibold text-sm">${seed.krName} 씨앗</p>
+                    <p class="text-xs text-gray-400">${seed.cost.toLocaleString()} KRW</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="number" id="buy-amount-${seedId}" value="1" min="1" class="w-16 bg-gray-800 text-white p-1 rounded border border-gray-500 text-sm text-center">
+                <button id="buy-seed-${seedId}" class="bg-blue-600 hover:bg-blue-700 text-xs font-bold py-1 px-3 rounded">구매</button>
+            </div>
+        `;
+        list?.appendChild(el);
+        document.getElementById(`buy-seed-${seedId}`)?.addEventListener('click', () => handleBuySeed(seedId));
+    }
+}
+function updateInventory() {
+    const container = dom.inventoryContainer;
+    if (!container) return;
+    container.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">인벤토리</h3><div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2"></div>`;
+    const list = container.querySelector('div');
+
+    const hasSeeds = Object.values(gameState.seedInventory).some(count => (count as number) > 0);
+    let hasCrops = false;
+    let hasItems = false;
+    
+    // 작물 및 아이템 확인
+    for (const key in gameState.inventory) {
+        if (CROP_DATA[key.split('_')[0]] && gameState.inventory[key] > 0) hasCrops = true;
+        if (FARM_ITEM_DATA[key as keyof typeof FARM_ITEM_DATA] && gameState.inventory[key] > 0) hasItems = true;
+    }
+
+    if (!hasSeeds && !hasCrops && !hasItems) {
+        list.innerHTML = `<p class="text-gray-400 text-sm text-center p-4">보유한 아이템이 없습니다.</p>`;
+        return;
+    }
+
+    // 씨앗 렌더링
+    for (const seedId in gameState.seedInventory) {
+        const count = gameState.seedInventory[seedId];
+        if (count > 0) {
+            const seed = CROP_DATA[seedId];
+            const el = document.createElement('div');
+            const isSelected = selectedSeed === seedId;
+            el.className = `bg-gray-600 p-2 rounded-lg flex items-center justify-between cursor-pointer transition-all ${isSelected ? 'ring-2 ring-yellow-400' : ''}`;
+            el.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">${seed.icon}</span>
+                    <p class="font-semibold text-sm">${seed.krName} 씨앗 x${count.toLocaleString()}</p>
+                </div>
+                <button class="bg-yellow-600 hover:bg-yellow-700 text-xs font-bold py-1 px-2 rounded">선택</button>
+            `;
+            el.onclick = () => {
+                selectedSeed = isSelected ? null : seedId;
+                updateInventory();
+            };
+            list?.appendChild(el);
+        }
+    }
+    
+    // 농사 아이템 렌더링
+    for (const itemId in FARM_ITEM_DATA) {
+        if (itemId === 'sprinkler') continue; // Sprinkler is an upgrade, not an inventory item.
+        const count = gameState.inventory[itemId];
+        if (count > 0) {
+            const item = FARM_ITEM_DATA[itemId as keyof typeof FARM_ITEM_DATA];
+            const el = document.createElement('div');
+            const isBuffActive = !!gameState.farmBuffs[itemId];
+            el.className = `bg-gray-800 p-2 rounded-lg flex items-center justify-between transition-all`;
+            
+            let buttonHtml = `<button id="use-item-${itemId}" class="bg-blue-600 hover:bg-blue-700 text-xs font-bold py-1 px-2 rounded">사용</button>`;
+            if (isBuffActive) {
+                 buttonHtml = `<button class="bg-gray-500 text-xs font-bold py-1 px-2 rounded btn-disabled" disabled>사용중</button>`;
+            }
+            
+            el.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">${item.icon}</span>
+                    <p class="font-semibold text-sm">${item.krName} x${count.toLocaleString()}</p>
+                </div>
+                ${buttonHtml}
+            `;
+            list?.appendChild(el);
+
+            if (!isBuffActive) {
+                document.getElementById(`use-item-${itemId}`)?.addEventListener('click', () => handleUseItem(itemId));
+            }
+        }
+    }
+
+
+    // 작물 렌더링 (품종별)
+    const cropGroups: { [key: string]: { [variant: string]: number } } = {};
+    for (const key in gameState.inventory) {
+        const [cropId, variant = 'normal'] = key.split('_');
+        if (CROP_DATA[cropId] && gameState.inventory[key] > 0) {
+            if (!cropGroups[cropId]) cropGroups[cropId] = {};
+            cropGroups[cropId][variant] = gameState.inventory[key];
+        }
+    }
+
+    for (const cropId in cropGroups) {
+        const crop = CROP_DATA[cropId];
+        const variants = cropGroups[cropId];
+        for (const variant in variants) {
+            const count = variants[variant];
+            const el = document.createElement('div');
+            el.className = 'bg-gray-800 p-2 rounded-lg flex items-center justify-between';
+            
+            let name = crop.krName;
+            let sellPrice = crop.sellPrice;
+            let canFeed = true;
+            if (variant === 'artificial') { name += ' (비료)'; sellPrice /= 1.5; }
+            if (variant === 'acid') { name += ' (산성)'; sellPrice -= 2; canFeed = false; }
+            sellPrice = Math.max(0, Math.floor(sellPrice));
+
+            el.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">${crop.icon}</span>
+                    <p class="font-semibold text-sm">${name} x${count.toLocaleString()}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="sell-${cropId}-${variant}" class="bg-green-600 hover:bg-green-700 text-xs font-bold py-1 px-2 rounded">판매 (${sellPrice} TK)</button>
+                    <button id="feed-${cropId}-${variant}" class="bg-blue-600 hover:bg-blue-700 text-xs font-bold py-1 px-2 rounded ${!canFeed ? 'btn-disabled' : ''}" ${!canFeed ? 'disabled' : ''}>먹이</button>
+                </div>
+            `;
+            list?.appendChild(el);
+            document.getElementById(`sell-${cropId}-${variant}`)?.addEventListener('click', () => handleSellCrop(cropId, variant));
+            if(canFeed) document.getElementById(`feed-${cropId}-${variant}`)?.addEventListener('click', () => handleFeedCube(cropId, variant));
+        }
+    }
+}
+function handleBuySeed(seedId: string) {
+    const amountInput = document.getElementById(`buy-amount-${seedId}`) as HTMLInputElement;
+    const amount = parseInt(amountInput.value);
+    if (!amount || amount <= 0) {
+        showNotification('유효한 수량을 입력하세요.', true);
+        return;
+    }
+
+    const seedData = CROP_DATA[seedId];
+    const totalCost = seedData.cost * amount;
+
+    if (gameState.userCash < totalCost) {
+        showNotification('씨앗을 살 현금이 부족합니다.', true);
+        return;
+    }
+
+    gameState.userCash -= totalCost;
+    gameState.seedInventory[seedId] = (gameState.seedInventory[seedId] || 0) + amount;
+    
+    showNotification(`${seedData.krName} 씨앗 ${amount}개를 구매했습니다.`, false);
+    updateInventory();
+    updateUI();
+    saveGameState();
+}
+function handlePlant(plotIndex: number) {
+    const plot = gameState.farmPlots[plotIndex];
+    if (plot?.seedId) { showNotification('이미 작물이 심겨져 있습니다.', true); return; }
+    if (!selectedSeed) { showNotification('먼저 인벤토리에서 심을 씨앗을 선택하세요.', true); return; }
+    if (!gameState.seedInventory[selectedSeed] || gameState.seedInventory[selectedSeed] <= 0) {
+        showNotification('선택한 씨앗이 부족합니다.', true);
+        return;
+    }
+    
+    gameState.seedInventory[selectedSeed]--;
+
+    const seedId = selectedSeed;
+    const seedData = CROP_DATA[seedId];
+    const fertilizerDiscount = 1 - (gameState.skills.farm_fertilizer * 0.05);
+    
+    let fertilizerType = null;
+    if (gameState.farmBuffs.artificialFertilizer) fertilizerType = 'artificial';
+    if (gameState.farmBuffs.acidFertilizer) fertilizerType = 'acid';
+
+    const newPlot = {
+        seedId: seedId,
+        plantedAt: gameTime.getTime(),
+        currentGrowth: 0,
+        totalGrowthTime: seedData.growthTime * fertilizerDiscount,
+        isGrown: false,
+        fertilizerType: fertilizerType,
+    };
+
+    gameState.farmPlots[plotIndex] = newPlot;
+    
+    updateFarmUI();
+    saveGameState();
+}
+function handleHarvest(plotIndex: number) {
+    const plot = gameState.farmPlots[plotIndex];
+    if (!plot || !plot.isGrown) return;
+
+    let harvestCount = 1;
+    const luckyHarvestChance = gameState.skills.farm_lucky_harvest * 0.05;
+    if (Math.random() < luckyHarvestChance) {
+        harvestCount = 2;
+        showNotification('행운의 수확! 작물을 2개 획득했습니다!', false);
+    }
+    
+    const variant = plot.fertilizerType || 'normal';
+    const inventoryKey = `${plot.seedId}_${variant}`;
+    gameState.inventory[inventoryKey] = (gameState.inventory[inventoryKey] || 0) + harvestCount;
+    
+    gameState.farmPlots[plotIndex] = null;
+    
+    updateFarmUI();
+    saveGameState();
+}
+function handleRemoveCrop(plotIndex: number) {
+    if (confirm('이 작물을 제거하시겠습니까?')) {
+        gameState.farmPlots[plotIndex] = null;
+        updateFarmUI();
+        saveGameState();
+    }
+}
+function handleSellCrop(cropId: string, variant: string) {
+    const inventoryKey = `${cropId}_${variant}`;
+    if (gameState.inventory[inventoryKey] > 0) {
+        gameState.inventory[inventoryKey]--;
+
+        let sellPrice = CROP_DATA[cropId].sellPrice;
+        if (variant === 'artificial') sellPrice /= 1.5;
+        if (variant === 'acid') sellPrice -= 2;
+        
+        gameState.farmCoin += Math.max(0, Math.floor(sellPrice));
+        updateInventory();
+        updateUI();
+        saveGameState();
+    }
+}
+function handleFeedCube(cropId: string, variant: string) {
+    const inventoryKey = `${cropId}_${variant}`;
+    if (gameState.inventory[inventoryKey] > 0) {
+        gameState.inventory[inventoryKey]--;
+        const crop = CROP_DATA[cropId];
+        const hg = crop.sellPrice / 10;
+        const chanceDivisor = 10 - gameState.skills.cube_exceptional;
+        const activationChance = (hg / chanceDivisor) / 100;
+        
+        if (Math.random() < activationChance) {
+            gameState.exceptionalState = {
+                isActive: true,
+                expiresAt: Date.now() + 3600 * 1000, // 1 hour
+            };
+            showNotification('특출남 상태 발동! 1시간 동안 생산량이 2배가 됩니다!', false);
+        } else {
+            showNotification(`${crop.krName}을 먹었지만 아무 일도 일어나지 않았습니다.`, false);
+        }
+        
+        updateInventory();
+        updateUI();
+        saveGameState();
+    }
+}
+
+// =======================================================
+// 스킬 트리 관련 로직
+// =======================================================
+function updateSkillsUI() {
+    const cubeContainer = dom.skillsCubeContainer;
+    const farmContainer = dom.skillsFarmContainer;
+    if (!cubeContainer || !farmContainer) return;
+    
+    cubeContainer.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">3D 큐브 스킬</h3><div class="space-y-3"></div>`;
+    farmContainer.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">농사 스킬</h3><div class="space-y-3"></div>`;
+    
+    const cubeList = cubeContainer.querySelector('div');
+    const farmList = farmContainer.querySelector('div');
+
+    for (const skillId in SKILL_DATA) {
+        const skill = SKILL_DATA[skillId as keyof typeof SKILL_DATA];
+        const currentLevel = gameState.skills[skillId];
+        
+        const el = document.createElement('div');
+        el.className = 'bg-gray-600 p-3 rounded-lg';
+
+        let buttonHtml: string;
+        if (currentLevel >= skill.maxTier) {
+            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-2 px-4 rounded-lg text-sm btn-disabled" disabled>마스터</button>`;
+        } else {
+            const cost = skill.costs[currentLevel];
+            buttonHtml = `<button id="buy-skill-${skillId}" class="w-full bg-purple-600 hover:bg-purple-700 font-bold py-2 px-4 rounded-lg text-sm">${cost.toLocaleString()} TK</button>`;
+        }
+        
+        const currentDesc = skillId === 'farm_expand' ? `현재 크기: ${3 + currentLevel}x${3 + currentLevel}` : `현재: ${skill.description(currentLevel)}`;
+        const nextDesc = currentLevel < skill.maxTier ? `다음: ${skill.description(currentLevel + 1)}` : '최대 레벨';
+
+        el.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="font-bold text-base">${skill.name}</h4>
+                <p class="text-sm text-gray-300">Lv. ${currentLevel} / ${skill.maxTier}</p>
+            </div>
+            <p class="text-xs text-gray-400 mb-3 h-8">${currentDesc}<br>${nextDesc}</p>
+            ${buttonHtml}
+        `;
+
+        if (skill.category === 'cube') {
+            cubeList?.appendChild(el);
+        } else {
+            farmList?.appendChild(el);
+        }
+
+        if (currentLevel < skill.maxTier) {
+            document.getElementById(`buy-skill-${skillId}`)?.addEventListener('click', () => handleBuySkill(skillId));
+        }
+    }
+}
+function handleBuySkill(skillId: string) {
+    const skill = SKILL_DATA[skillId as keyof typeof SKILL_DATA];
+    const currentLevel = gameState.skills[skillId];
+    if (currentLevel >= skill.maxTier) return;
+
+    const cost = skill.costs[currentLevel];
+    if (gameState.farmCoin < cost) {
+        showNotification('농장 코인이 부족합니다.', true);
+        return;
+    }
+
+    gameState.farmCoin -= cost;
+    gameState.skills[skillId]++;
+    
+    if (skillId === 'farm_expand') {
+        const oldSize = (3 + currentLevel) * (3 + currentLevel);
+        const newSize = (3 + gameState.skills.farm_expand) * (3 + gameState.skills.farm_expand);
+        const newPlots = Array(newSize).fill(null);
+        // 기존 작물 데이터 보존
+        for(let i=0; i<oldSize; i++) {
+            newPlots[i] = gameState.farmPlots[i];
+        }
+        gameState.farmPlots = newPlots;
+        updateFarmUI();
+    }
+    
+    showNotification(`${skill.name} 스킬 레벨 업!`, false);
+    updateSkillsUI();
+    updateUI();
+    saveGameState();
+}
+
+
+// =======================================================
 // 공용 로직
 // =======================================================
+function populateFarmShop() {
+    const container = dom.farmShopItems;
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (const itemId in FARM_ITEM_DATA) {
+        const item = FARM_ITEM_DATA[itemId as keyof typeof FARM_ITEM_DATA];
+        
+        if (item.requires && item.requires !== gameState.weather) {
+            continue; // 조건 불충족 시 표시 안함
+        }
+
+        const el = document.createElement('div');
+        el.className = 'bg-gray-600 p-4 rounded-lg flex flex-col justify-between text-center';
+
+        let buttonHtml: string;
+        const isSprinklerAndOwned = itemId === 'sprinkler' && gameState.hasSprinkler;
+
+        if (isSprinklerAndOwned) {
+            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-2 px-4 rounded-lg text-sm mt-2 btn-disabled" disabled>구매 완료</button>`;
+        } else {
+            buttonHtml = `<button id="buy-farm-item-${itemId}" class="w-full bg-green-600 hover:bg-green-700 font-bold py-2 px-4 rounded-lg text-sm mt-2">${item.cost.toLocaleString()} KRW</button>`;
+        }
+
+        el.innerHTML = `
+             <div>
+                <div class="text-4xl mb-2">${item.icon}</div>
+                <h4 class="font-bold text-md">${item.krName} (x${item.quantity})</h4>
+                <p class="text-xs text-gray-400 mt-1 mb-3 h-12">${item.desc}</p>
+            </div>
+            ${buttonHtml}
+        `;
+        container.appendChild(el);
+
+        if (!isSprinklerAndOwned) {
+            document.getElementById(`buy-farm-item-${itemId}`)?.addEventListener('click', () => handleBuyFarmItem(itemId));
+        }
+    }
+}
+
+function handleBuyFarmItem(itemId: string) {
+    const itemData = FARM_ITEM_DATA[itemId as keyof typeof FARM_ITEM_DATA];
+    if (gameState.userCash < itemData.cost) {
+        showNotification('현금이 부족합니다.', true);
+        return;
+    }
+
+    if (itemId === 'sprinkler') {
+        if (gameState.hasSprinkler) {
+            showNotification('스프링클러는 이미 보유하고 있습니다.', true);
+            return;
+        }
+        gameState.userCash -= itemData.cost;
+        gameState.hasSprinkler = true;
+        showNotification('스프링클러를 구매했습니다! 이제 모든 작물이 더 빨리 자랍니다.', false);
+        populateFarmShop();
+        saveGameState();
+        return;
+    }
+
+    gameState.userCash -= itemData.cost;
+    gameState.inventory[itemId] = (gameState.inventory[itemId] || 0) + itemData.quantity;
+    showNotification(`${itemData.krName} ${itemData.quantity}개를 구매했습니다.`, false);
+    updateInventory();
+    saveGameState();
+}
+
+function handleUseItem(itemId: string) {
+    if (gameState.inventory[itemId] <= 0) return;
+
+    gameState.inventory[itemId]--;
+    let duration = 0;
+    if(itemId === 'wateringCan' || itemId === 'acidFertilizer') duration = 6 * 60 * 60 * 1000; // 6 game hours
+    if(itemId === 'artificialFertilizer') duration = 12 * 60 * 60 * 1000; // 12 game hours
+    
+    gameState.farmBuffs[itemId] = {
+        expiresAt: gameTime.getTime() + duration / 120, // 1 game minute = 0.25 real second
+    };
+    showNotification(`${FARM_ITEM_DATA[itemId as keyof typeof FARM_ITEM_DATA].krName} 효과가 시작되었습니다!`, false);
+    updateInventory();
+    saveGameState();
+}
+
+
 function handleCodeSubmit() {
     const input = document.getElementById('code-input') as HTMLInputElement;
     if (!input) return;
@@ -845,6 +1454,15 @@ function handleCodeSubmit() {
     } else if (code === 'ICE_CUBE102') {
         gameState.userCash += 1000000000000;
         showNotification('개발자 코드: 1조 KRW가 추가되었습니다!', false);
+        rewardGiven = true;
+    } else if (code === 'FARM4TREE') {
+        gameState.seedInventory['banana'] = (gameState.seedInventory['banana'] || 0) + 2;
+        showNotification('보상 코드: 바나나 씨앗 2개를 획득했습니다!', false);
+        updateInventory();
+        rewardGiven = true;
+    } else if (code === 'ICE_CUBE101') {
+        gameState.farmCoin += 1000000;
+        showNotification('개발자 코드: 1,000,000 농장 코인을 획득했습니다!', false);
         rewardGiven = true;
     } else {
         showNotification('유효하지 않은 코드입니다.', true);
@@ -922,25 +1540,31 @@ async function loadGameState() {
             
             const now = Date.now();
             if (gameState.lastOnlineTimestamp) {
-                const offlineSeconds = (now - gameState.lastOnlineTimestamp) / 1000;
+                const offlineMillis = now - gameState.lastOnlineTimestamp;
+                const offlineSeconds = offlineMillis / 1000;
                 if (offlineSeconds > 5) {
+                    // Offline Cash
                     let offlineCash = 0;
                     if(gameState.isCubePurchased) {
                         let avgBaseProd = 100;
                         if (gameState.isPrismUpgraded) avgBaseProd = 400;
                         else if (gameState.isEnergyUpgraded) avgBaseProd = 200;
-                        const avgLunarBonus = gameState.isLunarUpgraded ? (100 * (14 / 24)) : 0;
-                        offlineCash = offlineSeconds * (avgBaseProd + avgLunarBonus) * 0.002;
+                        avgBaseProd *= (1 + gameState.skills.cube_efficiency * 0.1);
+
+                        const avgLunarBonus = gameState.isLunarUpgraded ? (100 * (14 / 24)) : 0; // Average lunar bonus
+                        const vpnMultiplier = getVpnMultiplier(gameState.skills.cube_vpn);
+                        offlineCash = offlineSeconds * (avgBaseProd + avgLunarBonus) * vpnMultiplier;
                     }
                     
+                    // Offline Mining
                     let minedCoinsReport = '';
                     if (gameState.computerTier > 0) {
                         const tier = gameState.computerTier;
                         const offlineRealMinutes = offlineSeconds / 60;
-                        const minedCubes = Math.floor(offlineRealMinutes * tier * 0.004);
-                        const minedLunar = Math.floor(offlineRealMinutes * tier * 0.003);
-                        const minedEnergy = Math.floor(offlineRealMinutes * tier * 0.002);
-                        const minedPrism = Math.floor(offlineRealMinutes * tier * 0.001);
+                        const minedCubes = Math.floor(offlineRealMinutes * tier * 0.02);
+                        const minedLunar = Math.floor(offlineRealMinutes * tier * 0.015);
+                        const minedEnergy = Math.floor(offlineRealMinutes * tier * 0.01);
+                        const minedPrism = Math.floor(offlineRealMinutes * tier * 0.005);
                         gameState.userCubes += minedCubes;
                         gameState.userLunar += minedLunar;
                         gameState.userEnergy += minedEnergy;
@@ -951,6 +1575,21 @@ async function loadGameState() {
                     }
                     
                     gameState.userCash += offlineCash;
+                    
+                    // Offline Farming
+                    const offlineGrowth = offlineMillis; // 1ms real time = 1ms game time for growth calc
+                    gameState.farmPlots.forEach((plot: any) => {
+                        if (plot && plot.seedId && !plot.isGrown) {
+                            let growthMultiplier = 1; // Base offline multiplier
+                            if(gameState.hasSprinkler) growthMultiplier *= 1.5;
+
+                            plot.currentGrowth += offlineGrowth * growthMultiplier * 0.25; // Adjusted for gameloop speed
+                            if (plot.currentGrowth >= plot.totalGrowthTime) {
+                                plot.isGrown = true;
+                                plot.currentGrowth = plot.totalGrowthTime;
+                            }
+                        }
+                    });
 
                     if(offlineCash > 0 || minedCoinsReport) {
                         setTimeout(() => showNotification(`${Math.floor(offlineSeconds / 60)}분간의 오프라인 보상으로 ${Math.floor(offlineCash).toLocaleString()} KRW${minedCoinsReport}을 획득했습니다!`, false), 1000);
