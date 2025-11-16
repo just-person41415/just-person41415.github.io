@@ -1,3 +1,7 @@
+// --- Firebase Imports ---
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, onValue, push, serverTimestamp, query, limitToLast, DataSnapshot } from 'firebase/database';
+
 // FIX: Add declarations for global variables and extend Window interface to avoid TypeScript errors.
 declare var Chart: any;
 declare var THREE: any;
@@ -8,6 +12,28 @@ declare global {
         autosaveInterval?: number;
     }
 }
+
+// --- Firebase 설정 (본인의 설정으로 교체해야 합니다) ---
+const firebaseConfig = {
+  apiKey: "AIzaSy...YOUR_API_KEY", // 여기에 실제 API 키를 입력하세요.
+  authDomain: "your-project-id.firebaseapp.com",
+  databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project-id.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "1:your-sender-id:web:your-app-id"
+};
+
+// Firebase 앱 초기화
+let database: any;
+try {
+    const app = initializeApp(firebaseConfig);
+    database = getDatabase(app);
+} catch (e) {
+    console.error("Firebase 초기화 오류. firebaseConfig를 올바르게 설정했는지 확인하세요.", e);
+}
+let nickname: string | null = null;
+
 
 // --- 전역 설정 ---
 const WEATHER_DATA = {
@@ -73,6 +99,7 @@ let gameTime: Date;
 // FIX: Changed to `any` to allow dynamic property assignment and avoid type errors.
 let dom: any = {};
 let selectedSeed: string | null = null;
+let isDevMode = false;
 
 // --- 3D 렌더링 관련 ---
 let scene: any, camera: any, renderer: any, cube: any;
@@ -249,6 +276,31 @@ function initGame() {
         transactionHistoryList: document.getElementById('transaction-history-list'),
         farmPlotSection: document.getElementById('farm-plot-section'), seedShopContainer: document.getElementById('seed-shop-container'), inventoryContainer: document.getElementById('inventory-container'),
         skillsCubeContainer: document.getElementById('skills-cube-container'), skillsFarmContainer: document.getElementById('skills-farm-container'),
+        // Chat elements
+        chatPanel: document.getElementById('chat-panel'),
+        toggleChatPanel: document.getElementById('toggle-chat-panel'),
+        openChatButton: document.getElementById('open-chat-button'),
+        nicknameSetup: document.getElementById('nickname-setup'),
+        nicknameInput: document.getElementById('nickname-input') as HTMLInputElement,
+        nicknameSubmit: document.getElementById('nickname-submit'),
+        chatInterface: document.getElementById('chat-interface'),
+        chatLog: document.getElementById('chat-log'),
+        chatForm: document.getElementById('chat-form'),
+        chatInput: document.getElementById('chat-input') as HTMLInputElement,
+        // Dev Panel Elements
+        devPanel: document.getElementById('dev-panel'),
+        devWeatherSelect: document.getElementById('dev-weather-select') as HTMLSelectElement,
+        devWeatherApply: document.getElementById('dev-weather-apply'),
+        devAnnouncementInput: document.getElementById('dev-announcement-input') as HTMLInputElement,
+        devAnnouncementSend: document.getElementById('dev-announcement-send'),
+        devPriceCubeInput: document.getElementById('dev-price-cube-input') as HTMLInputElement,
+        devPriceCubeApply: document.getElementById('dev-price-cube-apply'),
+        devPriceLunarInput: document.getElementById('dev-price-lunar-input') as HTMLInputElement,
+        devPriceLunarApply: document.getElementById('dev-price-lunar-apply'),
+        devPriceEnergyInput: document.getElementById('dev-price-energy-input') as HTMLInputElement,
+        devPriceEnergyApply: document.getElementById('dev-price-energy-apply'),
+        devPricePrismInput: document.getElementById('dev-price-prism-input') as HTMLInputElement,
+        devPricePrismApply: document.getElementById('dev-price-prism-apply'),
     };
     ['assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
@@ -258,14 +310,29 @@ function initGame() {
     if (dom.upgradeEnergyButton) dom.upgradeEnergyButton.addEventListener('click', handleUpgradeEnergy);
     if (dom.upgradePrismButton) dom.upgradePrismButton.addEventListener('click', handleUpgradePrism);
     ['cube', 'lunar', 'energy', 'prism'].forEach(c => dom[`chartTab${c.charAt(0).toUpperCase() + c.slice(1)}`]?.addEventListener('click', () => switchChart(c)));
-    
+    if (dom.nicknameSubmit) dom.nicknameSubmit.addEventListener('click', handleSetNickname);
+    if (dom.chatForm) dom.chatForm.addEventListener('submit', handleSendMessage);
+    if (dom.toggleChatPanel) dom.toggleChatPanel.addEventListener('click', toggleChatPanelVisibility);
+    if (dom.openChatButton) dom.openChatButton.addEventListener('click', toggleChatPanelVisibility);
+
+    // Dev Panel Listeners
+    if (dom.devWeatherApply) dom.devWeatherApply.addEventListener('click', handleDevWeather);
+    if (dom.devAnnouncementSend) dom.devAnnouncementSend.addEventListener('click', handleDevAnnouncement);
+    if (dom.devPriceCubeApply) dom.devPriceCubeApply.addEventListener('click', () => handleDevPrice('cube'));
+    if (dom.devPriceLunarApply) dom.devPriceLunarApply.addEventListener('click', () => handleDevPrice('lunar'));
+    if (dom.devPriceEnergyApply) dom.devPriceEnergyApply.addEventListener('click', () => handleDevPrice('energy'));
+    if (dom.devPricePrismApply) dom.devPricePrismApply.addEventListener('click', () => handleDevPrice('prism'));
+
     populateTradeUI();
     populateShopItems();
     populateFarmShop();
+    populateDevPanel();
     initCharts();
     init3D();
+    initChat();
     updateFarmUI();
     updateSkillsUI();
+    loadChatPanelVisibility();
 }
 
 function startGame() {
@@ -715,6 +782,14 @@ function gameLoop() {
             }
         }
         state.weather = newWeather;
+
+        // --- CHAT SYSTEM MESSAGE ---
+        if (newWeather === '무지개') {
+            sendSystemMessage('하늘에서 무지개가 나타났습니다! 코인 상승 확률이 대폭 증가합니다.');
+        } else if (newWeather === '산성비') {
+            sendSystemMessage('산성비가 내립니다... 코인 하락 확률이 증가합니다.');
+        }
+        
         populateFarmShop(); // 날씨가 바뀌면 상점 다시 그림 (산성비료)
 
         if (state.weather === '천둥' && Math.random() < 0.05) {
@@ -793,6 +868,174 @@ function gameLoop() {
 
     updateUI();
 }
+
+// =======================================================
+// 채팅 및 개발자 모드 관련 로직
+// =======================================================
+function initChat() {
+    if (!database) {
+        console.error("Database is not initialized. Chat will be disabled.");
+        if(dom.nicknameSetup) dom.nicknameSetup.innerHTML = '<p class="text-red-400 text-center">채팅 서버에 연결할 수 없습니다. Firebase 설정을 확인하세요.</p>';
+        return;
+    }
+
+    nickname = localStorage.getItem('cubeCoinSimNickname');
+    if (nickname) {
+        dom.nicknameSetup?.classList.add('hidden');
+        dom.chatInterface?.classList.remove('hidden');
+    }
+
+    const messagesRef = query(ref(database, 'messages'), limitToLast(50));
+    onValue(messagesRef, (snapshot: DataSnapshot) => {
+        const messages = snapshot.val();
+        if (dom.chatLog) dom.chatLog.innerHTML = ''; // Clear chat
+        if (messages) {
+            Object.values(messages).forEach((msg: any) => {
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('text-sm', 'break-words');
+
+                const time = new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+                if (msg.nickname === '[SYSTEM]') {
+                    messageEl.innerHTML = `<p class="text-yellow-300"><span class="text-gray-400 text-xs mr-2">[${time}]</span> ${msg.text}</p>`;
+                } else if (msg.nickname === '[공지]') {
+                     messageEl.innerHTML = `<p class="p-2 bg-red-800 rounded-md border border-red-600"><span class="text-gray-300 text-xs mr-2">[${time}]</span><span class="font-bold text-red-300">${msg.nickname}</span>: ${msg.text}</p>`;
+                } else {
+                     messageEl.innerHTML = `<p><span class="text-gray-400 text-xs mr-2">[${time}]</span><span class="font-semibold text-cyan-300">${msg.nickname}</span>: ${msg.text}</p>`;
+                }
+                dom.chatLog?.appendChild(messageEl);
+            });
+            dom.chatLog.scrollTop = dom.chatLog.scrollHeight; // Scroll to bottom
+        }
+    });
+}
+
+function handleSetNickname() {
+    const newNickname = dom.nicknameInput?.value.trim();
+    if (newNickname && newNickname.length > 1 && newNickname.length <= 15) {
+        nickname = newNickname;
+        localStorage.setItem('cubeCoinSimNickname', nickname);
+        dom.nicknameSetup?.classList.add('hidden');
+        dom.chatInterface?.classList.remove('hidden');
+        showNotification(`닉네임이 '${nickname}'(으)로 설정되었습니다.`, false);
+    } else {
+        showNotification('닉네임은 2자 이상 15자 이하로 입력해주세요.', true);
+    }
+}
+
+function handleSendMessage(e: Event) {
+    e.preventDefault();
+    if (!database) return;
+    const messageText = dom.chatInput?.value.trim();
+    if (!messageText) return;
+
+    // 개발자 모드 명령어 확인
+    if (messageText.toLowerCase() === '/dev.mod') {
+        toggleDevMode();
+        dom.chatInput.value = '';
+        return;
+    }
+
+    if (nickname) {
+        const messagesRef = ref(database, 'messages');
+        push(messagesRef, {
+            nickname: nickname,
+            text: messageText,
+            timestamp: serverTimestamp()
+        }).catch(error => console.error("Message send failed:", error));
+        dom.chatInput.value = '';
+    }
+}
+
+function sendSystemMessage(text: string) {
+    if (!database) return;
+    const messagesRef = ref(database, 'messages');
+    push(messagesRef, {
+        nickname: '[SYSTEM]',
+        text: text,
+        timestamp: serverTimestamp()
+    }).catch(error => console.error("System message send failed:", error));
+}
+
+function sendSpecialSystemMessage(text: string, type: string) {
+    if (!database) return;
+    const messagesRef = ref(database, 'messages');
+    push(messagesRef, {
+        nickname: `[${type}]`,
+        text: text,
+        timestamp: serverTimestamp()
+    }).catch(error => console.error("Special system message send failed:", error));
+}
+
+function toggleChatPanelVisibility() {
+    const isHidden = dom.chatPanel.classList.toggle('hidden');
+    dom.openChatButton.classList.toggle('hidden', !isHidden);
+    localStorage.setItem('cubeCoinSimChatHidden', isHidden ? 'true' : 'false');
+}
+
+function loadChatPanelVisibility() {
+    const isHidden = localStorage.getItem('cubeCoinSimChatHidden') === 'true';
+    if (isHidden) {
+        dom.chatPanel.classList.add('hidden');
+        dom.openChatButton.classList.remove('hidden');
+    }
+}
+
+function toggleDevMode() {
+    isDevMode = !isDevMode;
+    dom.devPanel.classList.toggle('hidden');
+    showNotification(isDevMode ? '개발자 모드가 활성화되었습니다.' : '개발자 모드가 비활성화되었습니다.', false);
+}
+
+function populateDevPanel() {
+    if (!dom.devWeatherSelect) return;
+    dom.devWeatherSelect.innerHTML = '';
+    Object.keys(WEATHER_DATA).forEach(weather => {
+        const option = document.createElement('option');
+        option.value = weather;
+        option.textContent = weather;
+        dom.devWeatherSelect.appendChild(option);
+    });
+}
+
+function handleDevWeather() {
+    const newWeather = dom.devWeatherSelect.value;
+    gameState.weather = newWeather;
+    sendSystemMessage(`[DEV] 날씨가 강제로 '${newWeather}'(으)로 변경되었습니다.`);
+    showNotification(`날씨를 '${newWeather}'(으)로 변경했습니다.`, false);
+    updateUI();
+}
+
+function handleDevAnnouncement() {
+    const message = dom.devAnnouncementInput.value.trim();
+    if (message) {
+        sendSpecialSystemMessage(message, '공지');
+        dom.devAnnouncementInput.value = '';
+    } else {
+        showNotification('공지 내용을 입력해주세요.', true);
+    }
+}
+
+function handleDevPrice(coinId: 'cube' | 'lunar' | 'energy' | 'prism') {
+    const input = dom[`devPrice${coinId.charAt(0).toUpperCase() + coinId.slice(1)}Input`];
+    const newPrice = parseInt(input.value);
+
+    if (isNaN(newPrice) || newPrice <= 0) {
+        showNotification('유효한 가격을 입력해주세요.', true);
+        return;
+    }
+
+    switch(coinId) {
+        case 'cube': gameState.currentPrice = newPrice; break;
+        case 'lunar': gameState.currentLunarPrice = newPrice; break;
+        case 'energy': gameState.currentEnergyPrice = newPrice; break;
+        case 'prism': gameState.currentPrismPrice = newPrice; break;
+    }
+    input.value = '';
+    showNotification(`${coinId.toUpperCase()} 가격을 ${newPrice.toLocaleString()}으로 변경했습니다.`, false);
+    updateUI();
+}
+
 
 function handleMining() {
     const state = gameState;

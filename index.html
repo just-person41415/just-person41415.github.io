@@ -11,7 +11,7 @@
         /* 'Inter' 폰트 및 기본 스타일 적용 */
         body {
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* 전체 페이지 스크롤 방지 */
+            overflow: hidden; /* 전체 페이지 스croll 방지 */
         }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
         
@@ -40,6 +40,8 @@
 <script type="importmap">
 {
   "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/database": "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js",
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
   }
 }
@@ -53,7 +55,7 @@
         상단 정보 헤더
         ==========================================
         -->
-        <header class="w-full bg-gray-800 p-3 shadow-lg z-10">
+        <header class="w-full bg-gray-800 p-3 shadow-lg z-10 flex-shrink-0">
             <div class="flex justify-between items-center max-w-screen-2xl mx-auto">
                 <!-- 좌측: 시간 & 날씨 -->
                 <div class="flex items-center gap-6 text-sm">
@@ -75,21 +77,22 @@
                     <div><h2 class="text-xs font-semibold text-pink-300 uppercase">PRISM</h2><div class="flex items-baseline gap-2"><div id="current-prism-price" class="text-base font-bold text-white">-</div><div id="prism-price-change" class="text-xs font-medium text-gray-300">-</div></div></div>
                 </div>
 
-                <!-- 우측: 게임 타이틀 -->
+                <!-- 우측: 게임 타이틀 & 채팅 토글 -->
                  <div class="flex items-center gap-4">
                     <div class="text-lg font-bold text-white">큐브 코인 시뮬레이터</div>
+                    <button id="open-chat-button" class="hidden bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm">채팅 열기</button>
                 </div>
             </div>
         </header>
         
         <!-- 
         ==========================================
-        게임 컨테이너
+        게임 컨테이너 (3단 레이아웃)
         ==========================================
         -->
-        <div id="app-container" class="flex flex-col md:flex-row flex-grow overflow-hidden">
+        <div id="app-container" class="flex flex-row flex-grow overflow-hidden">
             <!-- 좌측 패널: 3D 큐브 및 수입원 관리 -->
-            <div class="w-full md:w-1/3 bg-gray-800 p-6 flex flex-col">
+            <div class="w-full md:w-1/3 bg-gray-800 p-6 flex flex-col flex-shrink-0">
                  <div class="bg-gray-700 rounded-lg shadow-lg flex flex-col flex-grow">
                     <div class="flex justify-between items-center p-4"><h3 class="text-lg font-semibold text-white">수입원 관리</h3></div>
                     <div id="content-income" class="px-4 pb-4 flex flex-col flex-grow">
@@ -138,8 +141,8 @@
                 </div>
             </div>
 
-            <!-- 우측 패널: 대시보드 -->
-            <div class="w-full md:w-2/3 p-6 bg-gray-900 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+            <!-- 중앙 패널: 대시보드 -->
+            <div class="flex-grow p-6 bg-gray-900 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
                 <h1 class="text-3xl font-bold text-white mb-2">대시보드</h1>
                 
                 <!-- 섹션 컨테이너 -->
@@ -162,6 +165,64 @@
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-farm"><h3 class="text-lg font-semibold text-white">농사</h3><svg class="w-5 h-5 text-gray-400" id="toggle-farm-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-farm" class="px-4 pb-4 hidden"><div class="flex flex-col lg:flex-row gap-4"><div class="lg:w-1/2" id="farm-plot-section"></div><div class="lg:w-1/2 flex flex-col gap-4"><div id="seed-shop-container"></div><div id="inventory-container"></div></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-skills"><h3 class="text-lg font-semibold text-white">스킬 트리</h3><svg class="w-5 h-5 text-gray-400" id="toggle-skills-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-skills" class="px-4 pb-4 hidden"><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div id="skills-cube-container"></div><div id="skills-farm-container"></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
+            </div>
+
+            <!-- 우측 패널: 채팅 -->
+            <div id="chat-panel" class="w-full md:w-96 bg-gray-800 flex flex-col p-4 transition-all duration-300 flex-shrink-0">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                    <h3 class="text-lg font-semibold text-white">글로벌 채팅</h3>
+                    <button id="toggle-chat-panel" title="채팅창 닫기" class="p-1 hover:bg-gray-700 rounded-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+                <div class="flex flex-col flex-grow min-h-0">
+                    <div id="nickname-setup">
+                        <p class="text-sm text-gray-300 mb-2">채팅에 사용할 닉네임을 입력하세요.</p>
+                        <div class="flex gap-2">
+                            <input type="text" id="nickname-input" class="w-full bg-gray-900 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="닉네임" maxlength="15">
+                            <button id="nickname-submit" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg">설정</button>
+                        </div>
+                    </div>
+                    <div id="chat-interface" class="hidden flex flex-col flex-grow min-h-0">
+                        <div id="chat-log" class="bg-gray-900 rounded-lg p-3 flex-grow overflow-y-auto custom-scrollbar mb-3 space-y-2">
+                            <!-- Messages will appear here -->
+                        </div>
+                        <form id="chat-form" class="flex gap-2 flex-shrink-0">
+                            <input type="text" id="chat-input" class="w-full bg-gray-900 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="메시지 입력..." autocomplete="off">
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 font-bold py-2 px-6 rounded-lg">전송</button>
+                        </form>
+                    </div>
+
+                    <!-- 개발자 모드 패널 (숨김) -->
+                    <div id="dev-panel" class="hidden border-t border-gray-600 mt-4 pt-4 text-sm flex-shrink-0">
+                        <h4 class="font-bold text-yellow-300 text-center mb-3 text-base">개발자 모드</h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block mb-1 text-gray-300 font-semibold">날씨 변경</label>
+                                <div class="flex gap-2">
+                                    <select id="dev-weather-select" class="w-full bg-gray-900 p-2 rounded border border-gray-600"></select>
+                                    <button id="dev-weather-apply" class="bg-blue-600 hover:bg-blue-700 px-4 rounded">적용</button>
+                                </div>
+                            </div>
+                             <div>
+                                <label class="block mb-1 text-gray-300 font-semibold">시스템 공지</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="dev-announcement-input" class="w-full bg-gray-900 p-2 rounded border border-gray-600" placeholder="공지 내용...">
+                                    <button id="dev-announcement-send" class="bg-red-600 hover:bg-red-700 px-4 rounded">전송</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-gray-300 font-semibold">코인 가격 변경</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="flex gap-1"><input type="number" id="dev-price-cube-input" class="w-full bg-gray-900 p-1 rounded" placeholder="CUBE"><button id="dev-price-cube-apply" class="bg-gray-600 px-2 rounded">✓</button></div>
+                                    <div class="flex gap-1"><input type="number" id="dev-price-lunar-input" class="w-full bg-gray-900 p-1 rounded" placeholder="LUNAR"><button id="dev-price-lunar-apply" class="bg-gray-600 px-2 rounded">✓</button></div>
+                                    <div class="flex gap-1"><input type="number" id="dev-price-energy-input" class="w-full bg-gray-900 p-1 rounded" placeholder="ENERGY"><button id="dev-price-energy-apply" class="bg-gray-600 px-2 rounded">✓</button></div>
+                                    <div class="flex gap-1"><input type="number" id="dev-price-prism-input" class="w-full bg-gray-900 p-1 rounded" placeholder="PRISM"><button id="dev-price-prism-apply" class="bg-gray-600 px-2 rounded">✓</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
