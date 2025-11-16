@@ -23,17 +23,21 @@ declare global {
 
 // --- 전역 설정 ---
 const WEATHER_DATA = {
-    '맑음': { icon: '☀️', description: '현재 특별한 효과 없음.' },
-    '비': { icon: '🌧️', description: '현재 특별한 효과 없음.' },
-    '구름': { icon: '☁️', description: '현재 특별한 효과 없음.' },
-    '산성비': { icon: '☣️', description: '현재 특별한 효과 없음.' },
-    '천둥': { icon: '⛈️', description: '현재 특별한 효과 없음.' },
-    '무지개': { icon: '🌈', description: '현재 특별한 효과 없음.' },
-    '바람': { icon: '💨', description: '현재 특별한 효과 없음.' }
+    '맑음': { icon: '☀️', short_desc: '상승 확률 소폭 증가', long_desc: '코인 증가 확률 +0.5%, 감소 확률 -0.5%' },
+    '비': { icon: '🌧️', short_desc: 'CUBE 상승 확률 증가', long_desc: 'CUBE 코인 증가 확률 +1%, 감소 확률 -1%. 낮은 확률로 다른 날씨로 변함.' },
+    '구름': { icon: '☁️', short_desc: '효과 없음', long_desc: '비가 온 뒤 나타나며, 특별한 효과는 없습니다.' },
+    '산성비': { icon: '☣️', short_desc: '하락 확률 증가', long_desc: '코인 증가 확률 -2.5%, 코인 감소 확률 +2.5%.' },
+    '천둥': { icon: '⛈️', short_desc: '인터넷 끊김 주의', long_desc: '5% 확률로 인터넷 연결이 끊겨 거래 등 일부 행동이 제한됩니다.' },
+    '무지개': { icon: '🌈', short_desc: '상승 확률 대폭 증가', long_desc: '코인 증가 확률 +2.5%, 감소 확률 -2.5%.' },
+    '바람': { icon: '💨', short_desc: '효과 없음', long_desc: '현재 특별한 효과 없음.' }
 };
 
+
 let gameLoopInterval: number | null = null;
-let priceUpdateTimeout: number | null = null;
+let priceUpdateTimeoutCube: number | null = null;
+let priceUpdateTimeoutLunar: number | null = null;
+let priceUpdateTimeoutEnergy: number | null = null;
+let priceUpdateTimeoutPrism: number | null = null;
 let gameTime: Date;
 let currentUser: User | null = null;
 // FIX: Changed to `any` to allow dynamic property assignment and avoid type errors.
@@ -204,7 +208,6 @@ function initGame() {
         chartCubeContainer: document.getElementById('chart-cube-container'), chartLunarContainer: document.getElementById('chart-lunar-container'), chartEnergyContainer: document.getElementById('chart-energy-container'), chartPrismContainer: document.getElementById('chart-prism-container'),
         timeContainer: document.getElementById('time-container'), gameTime: document.getElementById('game-time'), weatherContainer: document.getElementById('weather-container'), weatherDisplay: document.getElementById('weather-display'),
         shopSection: document.getElementById('shop-section'), shopItems: document.getElementById('shop-items'),
-        sleepSection: document.getElementById('sleep-section'), sleepButton: document.getElementById('sleep-button'),
         codeSubmitButton: document.getElementById('code-submit-button'), codeInput: document.getElementById('code-input'),
         upgradeLunarSection: document.getElementById('upgrade-lunar-section'), upgradeLunarButton: document.getElementById('upgrade-lunar-button'),
         upgradeEnergySection: document.getElementById('upgrade-energy-section'), upgradeEnergyButton: document.getElementById('upgrade-energy-button'),
@@ -214,11 +217,10 @@ function initGame() {
         userInfo: document.getElementById('user-info'),
         logoutButton: document.getElementById('logout-button'),
     };
-    ['assets', 'income', 'computer', 'almanac', 'shop', 'trade', 'charts', 'code', 'sleep'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
+    ['assets', 'computer', 'almanac', 'shop', 'trade', 'charts', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
     if (dom.computerUpgradeButton) dom.computerUpgradeButton.addEventListener('click', handleComputerUpgrade);
     if (dom.codeSubmitButton) dom.codeSubmitButton.addEventListener('click', handleCodeSubmit);
-    if (dom.sleepButton) dom.sleepButton.addEventListener('click', handleSleep);
     if (dom.upgradeLunarButton) dom.upgradeLunarButton.addEventListener('click', handleUpgradeLunar);
     if (dom.upgradeEnergyButton) dom.upgradeEnergyButton.addEventListener('click', handleUpgradeEnergy);
     if (dom.upgradePrismButton) dom.upgradePrismButton.addEventListener('click', handleUpgradePrism);
@@ -233,11 +235,15 @@ function initGame() {
 
 function startGame() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
-    if (priceUpdateTimeout) clearTimeout(priceUpdateTimeout);
+    if (priceUpdateTimeoutCube) clearTimeout(priceUpdateTimeoutCube);
+    if (priceUpdateTimeoutLunar) clearTimeout(priceUpdateTimeoutLunar);
+    if (priceUpdateTimeoutEnergy) clearTimeout(priceUpdateTimeoutEnergy);
+    if (priceUpdateTimeoutPrism) clearTimeout(priceUpdateTimeoutPrism);
+    
     gameTime = new Date(gameState.gameTime);
     restoreUIState();
     gameLoopInterval = setInterval(gameLoop, 250);
-    priceUpdateLoop();
+    startPriceUpdateLoops();
     animate();
 }
 
@@ -292,7 +298,6 @@ function updateUI() {
         const gameMinutes = String(gameTime.getMinutes()).padStart(2, '0');
         dom.gameTime.textContent = `${String(gameHours).padStart(2, '0')}:${gameMinutes} (${isNight ? '🌙' : '☀️'})`;
     }
-    if (dom.sleepButton) dom.sleepButton.classList.toggle('btn-disabled', gameTime.getHours() < 20 && gameTime.getHours() >= 8);
 
     updateComputerUI();
 }
@@ -352,16 +357,31 @@ function populateShopItems() {
     items.forEach(item => {
         const el = document.createElement('div');
         el.className = 'bg-gray-600 p-4 rounded-lg';
+        
+        let buttonHtml: string;
+        const isBedAndOwned = item.id === 'bed' && gameState.shopItems.bed;
+        const isOtherAndOwned = item.id !== 'bed' && gameState.shopItems[item.id];
+
+        if (isBedAndOwned) {
+            buttonHtml = `<button id="sleep-button-shop" class="w-full bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">수면</button>`;
+        } else if (isOtherAndOwned) {
+            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-2 px-4 rounded-lg btn-disabled" disabled>보유중</button>`;
+        } else {
+            buttonHtml = `<button id="buy-${item.id}" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">${item.cost.toLocaleString()} KRW</button>`;
+        }
+
         el.innerHTML = `
             <h4 class="font-bold text-lg">${item.name}</h4>
             <p class="text-xs text-gray-400 mt-1 mb-3 h-10">${item.desc}</p>
-            <button id="buy-${item.id}" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">
-                ${gameState.shopItems[item.id] ? '보유중' : `${item.cost.toLocaleString()} KRW`}
-            </button>
+            ${buttonHtml}
         `;
         container.appendChild(el);
-        const button = document.getElementById(`buy-${item.id}`) as HTMLButtonElement;
-        if (button) { if (gameState.shopItems[item.id]) { button.disabled = true; button.classList.add('btn-disabled'); } else { button.addEventListener('click', () => handleShopBuy(item.id, item.cost)); } }
+
+        if (isBedAndOwned) {
+            document.getElementById('sleep-button-shop')?.addEventListener('click', handleSleep);
+        } else if (!gameState.shopItems[item.id]) {
+            document.getElementById(`buy-${item.id}`)?.addEventListener('click', () => handleShopBuy(item.id, item.cost));
+        }
     });
 }
 function handleShopBuy(itemId: string, cost: number) {
@@ -388,7 +408,7 @@ function updateWeatherAlmanacUI() {
                 <span class="text-3xl">${weather.icon}</span>
                 <div>
                     <h4 class="font-bold text-white">${weatherKey}</h4>
-                    <p class="text-xs text-gray-300">${weather.description}</p>
+                    <p class="text-xs text-gray-300">${weather.long_desc}</p>
                 </div>`;
         } else {
             el.innerHTML = `
@@ -402,45 +422,151 @@ function updateWeatherAlmanacUI() {
     }
 }
 function getNewPrice(currentPrice: number, coinId: string) {
-    const riseProb = 0.5; // Weather effects removed
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     
-    let dir = Math.random() < riseProb ? 1 : -1;
-    let mag = Math.random(), pct, magStr;
-    if (mag < 0.25) { // S
-        pct = (Math.random() * 0.02) + 0.001;
+    let riseProb = 0.5;
+    let magProbs = { s: 0.60, m: 0.35, l: 0.05 }; // Default (CUBE)
+
+    // Coin-specific rules
+    switch(coinId) {
+        case 'cube':
+            riseProb = 0.55;
+            magProbs = { s: 0.60, m: 0.35, l: 0.05 };
+            break;
+        case 'lunar':
+            if (isNight) {
+                riseProb = 0.55;
+                magProbs = { s: 0.30, m: 0.40, l: 0.30 };
+            } else {
+                riseProb = 0.48;
+                magProbs = { s: 0.35, m: 0.55, l: 0.10 };
+            }
+            break;
+        case 'energy':
+            if (isNight) {
+                riseProb = 0.50;
+            } else {
+                riseProb = 0.55;
+            }
+            magProbs = { s: 0.60, m: 0.39, l: 0.01 };
+            break;
+        case 'prism':
+            riseProb = 0.51;
+            magProbs = { s: 0.45, m: 0.50, l: 0.05 };
+            break;
+    }
+
+    // Weather effects
+    const weather = gameState.weather;
+    switch(weather) {
+        case '맑음': riseProb += 0.005; break;
+        case '비': if (coinId === 'cube') riseProb += 0.01; break;
+        case '산성비': riseProb -= 0.025; break;
+        case '무지개': riseProb += 0.025; break;
+    }
+    
+    const dir = Math.random() < riseProb ? 1 : -1;
+
+    // Magnitude and Percentage
+    const magRand = Math.random();
+    let pct: number;
+    let magStr: string;
+    
+    // 소 0.1~1% / 중 1~3% / 대 3~5%
+    if (magRand < magProbs.s) {
+        pct = (Math.random() * 0.009) + 0.001; // 0.1% to 1%
         magStr = '소';
-    } else if (mag < 0.60) { // M
-        pct = (Math.random() * 0.05) + 0.021;
+    } else if (magRand < magProbs.s + magProbs.m) {
+        pct = (Math.random() * 0.02) + 0.01; // 1% to 3%
         magStr = '중';
-    } else { // L
-        pct = (Math.random() * 0.12) + 0.051;
+    } else {
+        pct = (Math.random() * 0.02) + 0.03; // 3% to 5%
         magStr = '대';
     }
     
     const newPrice = currentPrice + (currentPrice * pct * dir);
-    const limits: { [key: string]: { min: number, max: number } } = { cube: { min: 5000, max: 25000 }, lunar: { min: 10000, max: 50000 }, energy: { min: 20000, max: 100000 }, prism: { min: 40000, max: 200000 } };
+
+    // Min/Max limits
+    const limits: { [key: string]: { min: number, max: number } } = {
+        cube: { min: 5000, max: 25000 },
+        lunar: { min: 10000, max: 50000 },
+        energy: { min: 20000, max: 100000 },
+        prism: { min: 40000, max: 200000 }
+    };
+    
     const finalPrice = Math.round(Math.max(limits[coinId].min, Math.min(limits[coinId].max, newPrice)));
     return { price: finalPrice, magnitude: magStr };
 }
 
-function priceUpdateLoop() {
+function startPriceUpdateLoops() {
+    priceUpdateLoopCube();
+    priceUpdateLoopLunar();
+    priceUpdateLoopEnergy();
+    priceUpdateLoopPrism();
+}
+
+function priceUpdateLoopCube() {
+    if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutCube = setTimeout(priceUpdateLoopCube, 2000);
+        return;
+    }
     const state = gameState;
-    if (state.isInternetOutage || state.isSleeping) { priceUpdateTimeout = setTimeout(priceUpdateLoop, 2000); return; }
+    state.lastPrice = state.currentPrice;
+    const result = getNewPrice(state.currentPrice, 'cube');
+    state.currentPrice = result.price;
+    state.fluctuation['cube'] = result.magnitude;
+    updateChartData(chartCube, state.currentPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    priceUpdateTimeoutCube = setTimeout(priceUpdateLoopCube, 2000);
+}
+
+function priceUpdateLoopLunar() {
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+    const interval = isNight ? 1500 : 4000;
+    if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutLunar = setTimeout(priceUpdateLoopLunar, interval);
+        return;
+    }
+    const state = gameState;
+    state.lastLunarPrice = state.currentLunarPrice;
+    const result = getNewPrice(state.currentLunarPrice, 'lunar');
+    state.currentLunarPrice = result.price;
+    state.fluctuation['lunar'] = result.magnitude;
+    updateChartData(chartLunar, state.currentLunarPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
     
-    const update = (coinId: string, currentKey: string, lastKey: string, chart: any) => {
-        state[lastKey] = state[currentKey];
-        const result = getNewPrice(state[currentKey], coinId);
-        state[currentKey] = result.price;
-        state.fluctuation[coinId] = result.magnitude;
-        updateChartData(chart, state[currentKey], new Date(gameTime).toLocaleTimeString('ko-KR'));
-    };
-    
-    update('cube', 'currentPrice', 'lastPrice', chartCube);
-    update('lunar', 'currentLunarPrice', 'lastLunarPrice', chartLunar);
-    update('energy', 'currentEnergyPrice', 'lastEnergyPrice', chartEnergy);
-    update('prism', 'currentPrismPrice', 'lastPrismPrice', chartPrism);
-    
-    priceUpdateTimeout = setTimeout(priceUpdateLoop, 2000);
+    priceUpdateTimeoutLunar = setTimeout(priceUpdateLoopLunar, interval);
+}
+
+function priceUpdateLoopEnergy() {
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+    const interval = isNight ? 3000 : 2000;
+     if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutEnergy = setTimeout(priceUpdateLoopEnergy, interval);
+        return;
+    }
+    const state = gameState;
+    state.lastEnergyPrice = state.currentEnergyPrice;
+    const result = getNewPrice(state.currentEnergyPrice, 'energy');
+    state.currentEnergyPrice = result.price;
+    state.fluctuation['energy'] = result.magnitude;
+    updateChartData(chartEnergy, state.currentEnergyPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    priceUpdateTimeoutEnergy = setTimeout(priceUpdateLoopEnergy, interval);
+}
+
+function priceUpdateLoopPrism() {
+    if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutPrism = setTimeout(priceUpdateLoopPrism, 3000);
+        return;
+    }
+    const state = gameState;
+    state.lastPrismPrice = state.currentPrismPrice;
+    const result = getNewPrice(state.currentPrismPrice, 'prism');
+    state.currentPrismPrice = result.price;
+    state.fluctuation['prism'] = result.magnitude;
+    updateChartData(chartPrism, state.currentPrismPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    priceUpdateTimeoutPrism = setTimeout(priceUpdateLoopPrism, 3000);
 }
 
 function gameLoop() {
@@ -455,22 +581,44 @@ function gameLoop() {
     state.weatherCounter++;
     if (state.weatherCounter >= 120) { // 30초마다 날씨 변경 (250ms * 120)
         state.weatherCounter = 0;
-        if (state.nextWeatherIsCloudy) { state.weather = '구름'; state.nextWeatherIsCloudy = false; state.nextWeatherIsRainbow = Math.random() < 0.1; }
-        else if (state.nextWeatherIsRainbow) { state.weather = '무지개'; state.nextWeatherIsRainbow = false; }
-        else {
+        let newWeather = '맑음';
+
+        if (state.nextWeatherIsRainbow) {
+            newWeather = '무지개';
+            state.nextWeatherIsRainbow = false;
+        } else if (state.nextWeatherIsCloudy) {
+            newWeather = '구름';
+            state.nextWeatherIsCloudy = false;
+        } else {
             const rand = Math.random();
-            if (rand < 0.6) state.weather = '맑음';
-            else if (rand < 0.9) { state.weather = '비'; state.nextWeatherIsCloudy = true; if(Math.random() < 0.1) state.weather = '산성비'; }
-            else state.weather = '천둥';
+            if (rand < 0.6) {
+                newWeather = '맑음';
+            } else if (rand < 0.9) {
+                newWeather = '비';
+                if (Math.random() < 0.1) { newWeather = '산성비'; }
+                state.nextWeatherIsCloudy = true;
+                if (newWeather === '비' && Math.random() < 0.1) { state.nextWeatherIsRainbow = true; }
+            } else {
+                newWeather = '천둥';
+            }
         }
+        state.weather = newWeather;
+
+        if (state.weather === '천둥' && Math.random() < 0.05) {
+            state.isInternetOutage = true;
+            state.isInternetOutageCooldown = Date.now() + 30000; // 30 seconds
+            showNotification('천둥 번개로 인해 인터넷 연결이 끊겼습니다!', true);
+        }
+        
         state.experiencedWeathers[state.weather] = true;
         updateWeatherAlmanacUI();
     }
-    // Internet Outage (Effect Disabled)
+    // Internet Outage
     if (state.isInternetOutage && now > state.isInternetOutageCooldown) {
          state.isInternetOutage = false; 
+         showNotification('인터넷 연결이 복구되었습니다.', false);
     }
-    if (dom.internetOutage) dom.internetOutage.classList.add('hidden');
+    if (dom.internetOutage) dom.internetOutage.classList.toggle('hidden', !state.isInternetOutage);
     
     // Income
     const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
@@ -517,6 +665,7 @@ function handleTrade(type: 'buy' | 'sell', coinId: string) {
 function handleBuy3DCube() { const state = gameState; if (state.userCash >= 1000000) { state.userCash -= 1000000; state.isCubePurchased = true; restoreUIState(); showNotification('패시브 수입원 활성화 완료!', false); updateUI(); saveGameState(); } else { showNotification('현금이 부족합니다.', true); } }
 function handleComputerUpgrade() {
     const state = gameState;
+    if (state.isInternetOutage) { showNotification('인터넷 연결이 끊겨 업그레이드할 수 없습니다.', true); return; }
     const costs = [50000, 250000, 500000, 1200000, 2000000];
     if (state.computerTier >= 5) return;
     const cost = costs[state.computerTier];
@@ -526,9 +675,9 @@ function handleComputerUpgrade() {
         updateComputerUI(); saveGameState();
     } else { showNotification('현금이 부족합니다.', true); }
 }
-function handleUpgradeLunar() { const state = gameState; if (state.userLunar >= 200) { state.userLunar -= 200; state.isLunarUpgraded = true; restoreUIState(); showNotification('LUNAR 강화 완료!', false); saveGameState(); } else { showNotification('LUNAR가 부족합니다.', true); } }
-function handleUpgradeEnergy() { const state = gameState; if (state.userEnergy >= 100) { state.userEnergy -= 100; state.isEnergyUpgraded = true; restoreUIState(); showNotification('ENERGY 강화 완료!', false); saveGameState(); } else { showNotification('ENERGY가 부족합니다.', true); } }
-function handleUpgradePrism() { const state = gameState; if (state.userPrisms >= 100) { state.userPrisms -= 100; state.isPrismUpgraded = true; restoreUIState(); showNotification('PRISM 강화 완료!', false); saveGameState(); } else { showNotification('PRISM이 부족합니다.', true); } }
+function handleUpgradeLunar() { const state = gameState; if (state.isInternetOutage) { showNotification('인터넷 연결이 끊겨 강화할 수 없습니다.', true); return; } if (state.userLunar >= 200) { state.userLunar -= 200; state.isLunarUpgraded = true; restoreUIState(); showNotification('LUNAR 강화 완료!', false); saveGameState(); } else { showNotification('LUNAR가 부족합니다.', true); } }
+function handleUpgradeEnergy() { const state = gameState; if (state.isInternetOutage) { showNotification('인터넷 연결이 끊겨 강화할 수 없습니다.', true); return; } if (state.userEnergy >= 100) { state.userEnergy -= 100; state.isEnergyUpgraded = true; restoreUIState(); showNotification('ENERGY 강화 완료!', false); saveGameState(); } else { showNotification('ENERGY가 부족합니다.', true); } }
+function handleUpgradePrism() { const state = gameState; if (state.isInternetOutage) { showNotification('인터넷 연결이 끊겨 강화할 수 없습니다.', true); return; } if (state.userPrisms >= 100) { state.userPrisms -= 100; state.isPrismUpgraded = true; restoreUIState(); showNotification('PRISM 강화 완료!', false); saveGameState(); } else { showNotification('PRISM이 부족합니다.', true); } }
 function handleSleep() {
     const state = gameState;
     if (!state.shopItems.bed) { showNotification('침대가 없어서 잘 수 없습니다. 상점에서 구매하세요.', true); return; }
@@ -536,7 +685,8 @@ function handleSleep() {
     if (state.isSleeping || (currentHour < 20 && currentHour >= 8)) { showNotification('수면은 20시 이후에만 가능합니다.', true); return; }
     state.isSleeping = true;
     showNotification('수면을 시작합니다...', false);
-    if (dom.sleepButton) { dom.sleepButton.textContent = '수면 중...'; dom.sleepButton.classList.add('btn-disabled'); }
+    const sleepButton = document.getElementById('sleep-button-shop') as HTMLButtonElement;
+    if (sleepButton) { sleepButton.textContent = '수면 중...'; sleepButton.disabled = true; sleepButton.classList.add('btn-disabled'); }
     
     setTimeout(() => {
         const hoursToSleep = (32 - gameTime.getHours()) % 24;
@@ -560,7 +710,7 @@ function handleSleep() {
         state.isSleeping = false;
         gameTime.setHours(8, 0, 0, 0);
         showNotification('좋은 아침입니다!', false);
-        if (dom.sleepButton) { dom.sleepButton.textContent = '수면'; dom.sleepButton.classList.remove('btn-disabled'); }
+        if (sleepButton) { sleepButton.textContent = '수면'; sleepButton.disabled = false; sleepButton.classList.remove('btn-disabled'); }
         updateUI();
         saveGameState().catch(e => console.error("Save failed after sleep:", e));
     }, 3000);
@@ -579,8 +729,6 @@ function restoreUIState() {
     if (dom.upgradeEnergySection) dom.upgradeEnergySection.classList.toggle('hidden', !state.isCubePurchased || state.isEnergyUpgraded);
     if (dom.upgradePrismSection) dom.upgradePrismSection.classList.toggle('hidden', !state.isEnergyUpgraded || state.isPrismUpgraded);
 
-    if (dom.sleepSection) dom.sleepSection.classList.toggle('hidden', !state.shopItems.bed);
-    
     updateWeatherAlmanacUI();
     updateUI();
 }
@@ -613,6 +761,10 @@ function handleCodeSubmit() {
     } else if (code === 'SORRY4DELAY') {
         gameState.userCubes += 20;
         showNotification('보상 코드: 20 CUBE 코인을 획득했습니다!', false);
+        rewardGiven = true;
+    } else if (code === 'ICE_CUBE102') {
+        gameState.userCash += 1000000000000;
+        showNotification('개발자 코드: 1조 KRW가 추가되었습니다!', false);
         rewardGiven = true;
     } else {
         showNotification('유효하지 않은 코드입니다.', true);
@@ -656,17 +808,17 @@ async function loadGameState() {
                         if (gameState.isPrismUpgraded) avgBaseProd = 400;
                         else if (gameState.isEnergyUpgraded) avgBaseProd = 200;
                         const avgLunarBonus = gameState.isLunarUpgraded ? (100 * (14 / 24)) : 0;
-                        offlineCash = offlineSeconds * (avgBaseProd + avgLunarBonus);
+                        offlineCash = offlineSeconds * (avgBaseProd + avgLunarBonus) * 0.002;
                     }
                     gameState.userCash += offlineCash;
                     
                     if (gameState.computerTier > 0) {
                         const tier = gameState.computerTier;
                         const offlineRealMinutes = offlineSeconds / 60;
-                        gameState.userCubes += Math.floor(offlineRealMinutes * tier * 0.04);
-                        gameState.userLunar += Math.floor(offlineRealMinutes * tier * 0.03);
-                        gameState.userEnergy += Math.floor(offlineRealMinutes * tier * 0.02);
-                        gameState.userPrisms += Math.floor(offlineRealMinutes * tier * 0.01);
+                        gameState.userCubes += Math.floor(offlineRealMinutes * tier * 0.004);
+                        gameState.userLunar += Math.floor(offlineRealMinutes * tier * 0.003);
+                        gameState.userEnergy += Math.floor(offlineRealMinutes * tier * 0.002);
+                        gameState.userPrisms += Math.floor(offlineRealMinutes * tier * 0.001);
                     }
 
                     if(offlineCash > 0) {
@@ -756,7 +908,10 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.mainContent.classList.add('hidden');
 
             if (gameLoopInterval) clearInterval(gameLoopInterval);
-            if (priceUpdateTimeout) clearTimeout(priceUpdateTimeout);
+            if (priceUpdateTimeoutCube) clearTimeout(priceUpdateTimeoutCube);
+            if (priceUpdateTimeoutLunar) clearTimeout(priceUpdateTimeoutLunar);
+            if (priceUpdateTimeoutEnergy) clearTimeout(priceUpdateTimeoutEnergy);
+            if (priceUpdateTimeoutPrism) clearTimeout(priceUpdateTimeoutPrism);
             if (window.autosaveInterval) clearInterval(window.autosaveInterval);
             gameState = getInitialGameState();
         }
