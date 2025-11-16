@@ -15,13 +15,13 @@ declare global {
 
 // --- Firebase 설정 (본인의 설정으로 교체해야 합니다) ---
 const firebaseConfig = {
-  apiKey: "AIzaSy...YOUR_API_KEY", // 여기에 실제 API 키를 입력하세요.
-  authDomain: "your-project-id.firebaseapp.com",
-  databaseURL: "https://your-project-id-default-rtdb.firebaseio.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "1:your-sender-id:web:your-app-id"
+  apiKey: "AIzaSyAMkZ-JoMxZEc2mXbIlZfhf_bVr-wLSHjo",
+  authDomain: "cube-coin-simulator.firebaseapp.com",
+  databaseURL: "https://cube-coin-simulator-default-rtdb.firebaseio.com",
+  projectId: "cube-coin-simulator",
+  storageBucket: "cube-coin-simulator.appspot.com",
+  messagingSenderId: "734525632764",
+  appId: "1:734525632764:web:ba9263fefeeca5726b6779"
 };
 
 // Firebase 앱 초기화
@@ -100,6 +100,7 @@ let gameTime: Date;
 let dom: any = {};
 let selectedSeed: string | null = null;
 let isDevMode = false;
+let resetConfirmationStep = 0;
 
 // --- 3D 렌더링 관련 ---
 let scene: any, camera: any, renderer: any, cube: any;
@@ -301,6 +302,7 @@ function initGame() {
         devPriceEnergyApply: document.getElementById('dev-price-energy-apply'),
         devPricePrismInput: document.getElementById('dev-price-prism-input') as HTMLInputElement,
         devPricePrismApply: document.getElementById('dev-price-prism-apply'),
+        devResetData: document.getElementById('dev-reset-data'),
     };
     ['assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
@@ -322,6 +324,7 @@ function initGame() {
     if (dom.devPriceLunarApply) dom.devPriceLunarApply.addEventListener('click', () => handleDevPrice('lunar'));
     if (dom.devPriceEnergyApply) dom.devPriceEnergyApply.addEventListener('click', () => handleDevPrice('energy'));
     if (dom.devPricePrismApply) dom.devPricePrismApply.addEventListener('click', () => handleDevPrice('prism'));
+    if (dom.devResetData) dom.devResetData.addEventListener('click', handleDevResetData);
 
     populateTradeUI();
     populateShopItems();
@@ -359,7 +362,7 @@ function showNotification(message: string, isError = true) {
     dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`;
     setTimeout(() => {
         dom.notification.classList.add('opacity-0', 'translate-y-10');
-    }, 3000);
+    }, 1000);
 }
 
 function updateUI() {
@@ -968,16 +971,31 @@ function sendSpecialSystemMessage(text: string, type: string) {
 }
 
 function toggleChatPanelVisibility() {
-    const isHidden = dom.chatPanel.classList.toggle('hidden');
-    dom.openChatButton.classList.toggle('hidden', !isHidden);
-    localStorage.setItem('cubeCoinSimChatHidden', isHidden ? 'true' : 'false');
+    if (!dom.chatPanel || !dom.openChatButton) return;
+    const isCurrentlyHidden = dom.chatPanel.classList.contains('hidden');
+
+    if (isCurrentlyHidden) {
+        // It's hidden, so show it
+        dom.chatPanel.classList.remove('hidden');
+        dom.openChatButton.classList.add('hidden');
+        localStorage.setItem('cubeCoinSimChatHidden', 'false');
+    } else {
+        // It's visible, so hide it
+        dom.chatPanel.classList.add('hidden');
+        dom.openChatButton.classList.remove('hidden');
+        localStorage.setItem('cubeCoinSimChatHidden', 'true');
+    }
 }
 
 function loadChatPanelVisibility() {
+    if (!dom.chatPanel || !dom.openChatButton) return;
     const isHidden = localStorage.getItem('cubeCoinSimChatHidden') === 'true';
     if (isHidden) {
         dom.chatPanel.classList.add('hidden');
         dom.openChatButton.classList.remove('hidden');
+    } else {
+        dom.chatPanel.classList.remove('hidden');
+        dom.openChatButton.classList.add('hidden');
     }
 }
 
@@ -1034,6 +1052,41 @@ function handleDevPrice(coinId: 'cube' | 'lunar' | 'energy' | 'prism') {
     input.value = '';
     showNotification(`${coinId.toUpperCase()} 가격을 ${newPrice.toLocaleString()}으로 변경했습니다.`, false);
     updateUI();
+}
+
+function handleDevResetData() {
+    if (!dom.devResetData) return;
+    
+    if (resetConfirmationStep === 0) {
+        showNotification('초기화하려면 버튼을 한 번 더 누르세요. 모든 진행 상황이 삭제됩니다.', true);
+        dom.devResetData.textContent = '정말로 초기화하시겠습니까?';
+        dom.devResetData.classList.remove('bg-red-800', 'hover:bg-red-900');
+        dom.devResetData.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        resetConfirmationStep = 1;
+
+        // Reset confirmation after a few seconds to prevent accidental clicks
+        setTimeout(() => {
+            if (resetConfirmationStep === 1) {
+                 resetConfirmationStep = 0;
+                 dom.devResetData.textContent = '전체 데이터 초기화';
+                 dom.devResetData.classList.add('bg-red-800', 'hover:bg-red-900');
+                 dom.devResetData.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            }
+        }, 4000); // 4 seconds to confirm
+    } else if (resetConfirmationStep === 1) {
+        // Clear localStorage
+        localStorage.removeItem('cubeCoinSimGameState');
+        localStorage.removeItem('cubeCoinSimNickname');
+        localStorage.removeItem('cubeCoinSimChatHidden');
+        
+        // Show notification and reload
+        showNotification('데이터가 초기화되었습니다. 게임을 다시 시작합니다.', false);
+        
+        // Reload the page to apply changes
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500); // Wait for the notification to be seen
+    }
 }
 
 
