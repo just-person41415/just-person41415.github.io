@@ -30,6 +30,11 @@
         
         /* 탭 활성화 스타일 (v2) */
         .tab-active { border-bottom-color: #60a5fa !important; color: #60a5fa !important; font-weight: 600; }
+        
+        #login-modal .tab-active {
+            border-bottom-color: #60a5fa !important;
+            color: #60a5fa !important;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -38,142 +43,231 @@
         <div>v.0.4.0 날씨 업데이트까지 <span id="countdown-timer"></span> 남았습니다!</div>
         <div id="code-announcement" class="hidden text-sm"></div>
     </div>
-    
-    <!-- 
-    ==========================================
-    v.0.3.0 게임 컨테이너
-    ==========================================
-    -->
-    <div id="v0.3.0-container" class="hidden">
-        <div class="flex flex-col lg:flex-row w-full h-screen">
-            <!-- 왼쪽: 3D 뷰어 --><div id="v0.3.0-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black transition-all duration-300">
-                <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20">
-                    <div><h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2><div id="v0.3.0-current-price" class="text-3xl font-bold text-white">10,000 KRW</div><div id="v0.3.0-price-change" class="text-lg font-medium text-gray-300">-</div></div>
-                    <div id="v0.3.0-lunar-price-display" class="mt-4"><h2 class="text-sm font-semibold text-purple-300 uppercase">LUNAR-KRW</h2><div id="v0.3.0-current-lunar-price" class="text-3xl font-bold text-white">20,000 KRW</div><div id="v0.3.0-lunar-price-change" class="text-lg font-medium text-gray-300">-</div></div>
-                    <div class="mt-4"><h2 class="text-sm font-semibold text-pink-300 uppercase">PRISM-KRW</h2><div id="v0.3.0-current-prism-price" class="text-3xl font-bold text-white">50,000 KRW</div><div id="v0.3.0-prism-price-change" class="text-lg font-medium text-gray-300">-</div></div>
-                    <div id="v0.3.0-time-container" class="mt-4"><h2 class="text-sm font-semibold text-gray-300 uppercase">GAME TIME</h2><div id="v0.3.0-game-time" class="text-xl font-bold text-white">09:00 ☀️</div></div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-gray-900/80 backdrop-blur-sm flex justify-center items-center z-[100]">
+        <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-700">
+            <!-- Login Form -->
+            <div id="login-form">
+                <h2 class="text-3xl font-bold text-center text-white mb-2">로그인</h2>
+                <p class="text-center text-gray-400 mb-6">서비스를 이용하려면 로그인하세요.</p>
+                <div class="mb-4">
+                    <label for="login-email" class="block text-sm font-medium text-gray-300 mb-2">이메일</label>
+                    <input type="email" id="login-email" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
-                <div class="absolute bottom-4 left-4 flex flex-col md:flex-row gap-4 items-start md:items-end z-20">
-                    <div id="v0.3.0-passive-income-display" class="bg-black/50 backdrop-blur-sm p-3 rounded-lg shadow-xl hidden"><h3 class="text-sm font-semibold text-green-300">패시브 수입</h3><div id="v0.3.0-income-per-second" class="text-lg font-bold text-white">+0 KRW / sec</div></div>
-                    <div id="v0.3.0-upgrade-prism-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-pink-300">프리즘 업그레이드</h3><p class="text-gray-300 text-sm mb-3">큐브를 프리즘으로 업그레이드<br>(필요: 100 PRISM)</p><button id="v0.3.0-upgrade-prism-button" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg">100 PRISM에 업그레이드</button></div>
-                    <div id="v0.3.0-upgrade-lunar-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-purple-300">달빛 강화</h3><p class="text-gray-300 text-sm mb-3">큐브에 달의 힘을 부여합니다.</p><button id="v0.3.0-upgrade-lunar-blessing-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Lunar Blessing (200 LUNAR)</button></div>
+                <div class="mb-6">
+                    <label for="login-password" class="block text-sm font-medium text-gray-300 mb-2">비밀번호</label>
+                    <input type="password" id="login-password" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
-                <div id="v0.3.0-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10"><div id="v0.3.0-buy-cube-section"><h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3><p class="text-gray-300 mb-4">큐브를 활성화하고 초당 100 KRW를 생산하려면 1,000,000 KRW가 필요합니다.</p><button id="v0.3.0-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">1,000,000 KRW에 구매</button></div></div>
+                <button id="login-submit-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg text-lg">로그인</button>
+                <p class="text-center text-sm text-gray-400 mt-4">계정이 없나요? <button id="show-signup-button" class="font-medium text-blue-400 hover:text-blue-300">회원가입 하세요</button></p>
             </div>
-            <!-- 오른쪽: 대시보드 --><div id="v0.3.0-dashboard" class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto custom-scrollbar transition-all duration-300">
-                <h1 id="v0.3.0-game-title" class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터</h1>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-assets" class="px-4 pb-4"><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="v0.3.0-user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="v0.3.0-user-cubes" class="text-2xl font-bold text-blue-400">0</div></div><div id="v0.3.0-lunar-asset-display" class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">루나 (LUNAR)</h3><div id="v0.3.0-user-lunar" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="v0.3.0-user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-trade"><h3 class="text-lg font-semibold text-white">매수 / 매도</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-trade-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-trade" class="px-4 pb-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><label class="text-lg font-semibold text-blue-300">CUBE 거래</label><input type="number" id="v0.3.0-amount-input-cube" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="CUBE 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0.3.0-buy-button-cube" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v0.3.0-sell-button-cube" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div><div id="v0.3.0-lunar-trade-section" class="bg-gray-600 p-4 rounded-lg"><label class="text-lg font-semibold text-purple-300">LUNAR 거래</label><input type="number" id="v0.3.0-amount-input-lunar" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="LUNAR 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0.3.0-buy-button-lunar" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v0.3.0-sell-button-lunar" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div><div class="bg-gray-600 p-4 rounded-lg md:col-span-2"><label class="text-lg font-semibold text-pink-300">PRISM 거래</label><input type="number" id="v0.3.0-amount-input-prism" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="PRISM 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0.3.0-buy-button-prism" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v0.3.0-sell-button-prism" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-charts"><h3 class="text-lg font-semibold text-white">실시간 차트</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-charts" class="px-4 pb-4"><nav class="flex border-b border-gray-600 mb-4"><button id="v0.3.0-chart-tab-cube" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white tab-active">CUBE</button><button id="v0.3.0-chart-tab-lunar" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">LUNAR</button><button id="v0.3.0-chart-tab-prism" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">PRISM</button></nav><div id="v0.3.0-chart-cube-container" class="h-40"><canvas id="v0.3.0-price-chart"></canvas></div><div id="v0.3.0-chart-lunar-container" class="h-40 hidden"><canvas id="v0.3.0-lunar-price-chart"></canvas></div><div id="v0.3.0-chart-prism-container" class="h-40 hidden"><canvas id="v0.3.0-prism-price-chart"></canvas></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-history"><h3 class="text-lg font-semibold text-white">거래 내역</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-history-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-history" class="px-4 pb-4"><div id="v0.3.0-transaction-history" class="h-32 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-news"><h3 class="text-lg font-semibold text-white">실시간 뉴스 (예측)</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-news-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-news" class="px-4 pb-4"><div id="v0.3.0-news-feed" class="h-24 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-jobs"><h3 class="text-lg font-semibold text-white">다양한 돈벌이</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-jobs-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-jobs" class="px-4 pb-4"><div class="grid grid-cols-1 gap-4"><button id="v0.3.0-job-paper" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold p-3 rounded-lg"><span id="v0.3.0-job-paper-text">폐지 줍기 (+500)</span><span id="v0.3.0-job-paper-timer" class="text-sm ml-2"></span></button><button id="v0.3.0-job-starcatching" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg hidden">밤하늘에 별 따기<span id="v0.3.0-job-starcatching-timer" class="text-sm ml-2"></span></button></div></div></div>
-                <div id="v0.3.0-sleep-section" class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-sleep"><h3 class="text-lg font-semibold text-white">수면</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-sleep-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-sleep" class="px-4 pb-4 hidden"><div class="flex items-center gap-4"><p class="text-gray-300 text-sm flex-grow">밤에 잠을 자서 아침 8시까지 시간을 건너뜁니다.</p><button id="v0.3.0-sleep-button" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg btn-disabled">수면</button></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg">
-                    <div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-trophies">
-                        <h3 class="text-lg font-semibold text-white">이벤트 트로피</h3>
-                        <svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-trophies-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="hidden">
+                 <h2 class="text-3xl font-bold text-center text-white mb-2">회원가입</h2>
+                 <p class="text-center text-gray-400 mb-6">새 계정을 만들어 시작하세요.</p>
+                 <div class="mb-4">
+                    <label for="signup-email" class="block text-sm font-medium text-gray-300 mb-2">이메일</label>
+                    <input type="email" id="signup-email" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                </div>
+                <div class="mb-6">
+                    <label for="signup-password" class="block text-sm font-medium text-gray-300 mb-2">비밀번호</label>
+                    <input type="password" id="signup-password" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" required>
+                </div>
+                <button id="signup-submit-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg text-lg">회원가입</button>
+                <p class="text-center text-sm text-gray-400 mt-4">이미 계정이 있나요? <button id="show-login-button" class="font-medium text-blue-400 hover:text-blue-300">로그인 하세요</button></p>
+            </div>
+            
+            <p id="auth-error-message" class="text-red-400 text-center mt-4 text-sm h-5"></p>
+        </div>
+    </div>
+    
+    <main id="main-content" class="hidden">
+        <!-- 
+        ==========================================
+        v.0.3.0 게임 컨테이너
+        ==========================================
+        -->
+        <div id="v0.3.0-container" class="hidden">
+            <div class="flex flex-col lg:flex-row w-full h-screen">
+                <!-- 왼쪽: 3D 뷰어 --><div id="v0.3.0-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black transition-all duration-300">
+                    <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20">
+                        <div><h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2><div id="v0.3.0-current-price" class="text-3xl font-bold text-white">10,000 KRW</div><div id="v0.3.0-price-change" class="text-lg font-medium text-gray-300">-</div></div>
+                        <div id="v0.3.0-lunar-price-display" class="mt-4"><h2 class="text-sm font-semibold text-purple-300 uppercase">LUNAR-KRW</h2><div id="v0.3.0-current-lunar-price" class="text-3xl font-bold text-white">20,000 KRW</div><div id="v0.3.0-lunar-price-change" class="text-lg font-medium text-gray-300">-</div></div>
+                        <div class="mt-4"><h2 class="text-sm font-semibold text-pink-300 uppercase">PRISM-KRW</h2><div id="v0.3.0-current-prism-price" class="text-3xl font-bold text-white">50,000 KRW</div><div id="v0.3.0-prism-price-change" class="text-lg font-medium text-gray-300">-</div></div>
+                        <div id="v0.3.0-time-container" class="mt-4"><h2 class="text-sm font-semibold text-gray-300 uppercase">GAME TIME</h2><div id="v0.3.0-game-time" class="text-xl font-bold text-white">09:00 ☀️</div></div>
                     </div>
-                    <div id="v0.3.0-content-trophies" class="px-4 pb-4 hidden">
-                        <div id="v0.3.0-trophy-list" class="space-y-3 mb-4">
-                            <!-- JS will populate this -->
+                    <div class="absolute bottom-4 left-4 flex flex-col md:flex-row gap-4 items-start md:items-end z-20">
+                        <div id="v0.3.0-passive-income-display" class="bg-black/50 backdrop-blur-sm p-3 rounded-lg shadow-xl hidden"><h3 class="text-sm font-semibold text-green-300">패시브 수입</h3><div id="v0.3.0-income-per-second" class="text-lg font-bold text-white">+0 KRW / sec</div></div>
+                        <div id="v0.3.0-upgrade-prism-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-pink-300">프리즘 업그레이드</h3><p class="text-gray-300 text-sm mb-3">큐브를 프리즘으로 업그레이드<br>(필요: 100 PRISM)</p><button id="v0.3.0-upgrade-prism-button" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg">100 PRISM에 업그레이드</button></div>
+                        <div id="v0.3.0-upgrade-lunar-section" class="bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl text-center hidden"><h3 class="text-lg font-bold mb-2 text-purple-300">달빛 강화</h3><p class="text-gray-300 text-sm mb-3">큐브에 달의 힘을 부여합니다.</p><button id="v0.3.0-upgrade-lunar-blessing-button" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg">Lunar Blessing (200 LUNAR)</button></div>
+                    </div>
+                    <div id="v0.3.0-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10"><div id="v0.3.0-buy-cube-section"><h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3><p class="text-gray-300 mb-4">큐브를 활성화하고 초당 100 KRW를 생산하려면 1,000,000 KRW가 필요합니다.</p><button id="v0.3.0-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">1,000,000 KRW에 구매</button></div></div>
+                </div>
+                <!-- 오른쪽: 대시보드 --><div id="v0.3.0-dashboard" class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto custom-scrollbar transition-all duration-300">
+                    <h1 id="v0.3.0-game-title" class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터</h1>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-assets" class="px-4 pb-4"><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="v0.3.0-user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="v0.3.0-user-cubes" class="text-2xl font-bold text-blue-400">0</div></div><div id="v0.3.0-lunar-asset-display" class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">루나 (LUNAR)</h3><div id="v0.3.0-user-lunar" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="v0.3.0-user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-trade"><h3 class="text-lg font-semibold text-white">매수 / 매도</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-trade-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-trade" class="px-4 pb-4"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><label class="text-lg font-semibold text-blue-300">CUBE 거래</label><input type="number" id="v0.3.0-amount-input-cube" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="CUBE 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0.3.0-buy-button-cube" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v0.3.0-sell-button-cube" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div><div id="v0.3.0-lunar-trade-section" class="bg-gray-600 p-4 rounded-lg"><label class="text-lg font-semibold text-purple-300">LUNAR 거래</label><input type="number" id="v0.3.0-amount-input-lunar" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="LUNAR 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0.3.0-buy-button-lunar" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v0.3.0-sell-button-lunar" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div><div class="bg-gray-600 p-4 rounded-lg md:col-span-2"><label class="text-lg font-semibold text-pink-300">PRISM 거래</label><input type="number" id="v0.3.0-amount-input-prism" value="1" min="1" class="w-full bg-gray-800 text-white p-2 rounded mt-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="PRISM 수량"><div class="grid grid-cols-2 gap-4 mt-4"><button id="v0.3.0-buy-button-prism" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">매수</button><button id="v0.3.0-sell-button-prism" class="w-full bg-red-600 hover:bg-red-700 font-bold p-3 rounded-lg">매도</button></div></div></div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-charts"><h3 class="text-lg font-semibold text-white">실시간 차트</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-charts" class="px-4 pb-4"><nav class="flex border-b border-gray-600 mb-4"><button id="v0.3.0-chart-tab-cube" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white tab-active">CUBE</button><button id="v0.3.0-chart-tab-lunar" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">LUNAR</button><button id="v0.3.0-chart-tab-prism" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">PRISM</button></nav><div id="v0.3.0-chart-cube-container" class="h-40"><canvas id="v0.3.0-price-chart"></canvas></div><div id="v0.3.0-chart-lunar-container" class="h-40 hidden"><canvas id="v0.3.0-lunar-price-chart"></canvas></div><div id="v0.3.0-chart-prism-container" class="h-40 hidden"><canvas id="v0.3.0-prism-price-chart"></canvas></div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-history"><h3 class="text-lg font-semibold text-white">거래 내역</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-history-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-history" class="px-4 pb-4"><div id="v0.3.0-transaction-history" class="h-32 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-news"><h3 class="text-lg font-semibold text-white">실시간 뉴스 (예측)</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-news-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-news" class="px-4 pb-4"><div id="v0.3.0-news-feed" class="h-24 overflow-y-auto custom-scrollbar pr-2 bg-gray-600 rounded-lg p-2">...</div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-jobs"><h3 class="text-lg font-semibold text-white">다양한 돈벌이</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-jobs-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-jobs" class="px-4 pb-4"><div class="grid grid-cols-1 gap-4"><button id="v0.3.0-job-paper" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold p-3 rounded-lg"><span id="v0.3.0-job-paper-text">폐지 줍기 (+500)</span><span id="v0.3.0-job-paper-timer" class="text-sm ml-2"></span></button><button id="v0.3.0-job-starcatching" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg hidden">밤하늘에 별 따기<span id="v0.3.0-job-starcatching-timer" class="text-sm ml-2"></span></button></div></div></div>
+                    <div id="v0.3.0-sleep-section" class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-sleep"><h3 class="text-lg font-semibold text-white">수면</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-sleep-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-sleep" class="px-4 pb-4 hidden"><div class="flex items-center gap-4"><p class="text-gray-300 text-sm flex-grow">밤에 잠을 자서 아침 8시까지 시간을 건너뜁니다.</p><button id="v0.3.0-sleep-button" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg btn-disabled">수면</button></div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-trophies">
+                            <h3 class="text-lg font-semibold text-white">이벤트 트로피</h3>
+                            <svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-trophies-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
-                        <div class="border-t border-gray-600 pt-3">
-                            <h4 class="text-md font-semibold text-blue-300 mb-2">총 효과</h4>
-                            <div id="v0.3.0-trophy-effects" class="text-sm text-gray-300">
+                        <div id="v0.3.0-content-trophies" class="px-4 pb-4 hidden">
+                            <div id="v0.3.0-trophy-list" class="space-y-3 mb-4">
+                                <!-- JS will populate this -->
+                            </div>
+                            <div class="border-t border-gray-600 pt-3">
+                                <h4 class="text-md font-semibold text-blue-300 mb-2">총 효과</h4>
+                                <div id="v0.3.0-trophy-effects" class="text-sm text-gray-300">
+                                    <!-- JS will populate this -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="v0.3.0-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v0.3.0-code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-updates"><h3 class="text-lg font-semibold text-white">업데이트 내역 <span id="v0.3.0-version-display"></span></h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-updates-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-updates" class="px-4 pb-4 hidden"><ul id="v0.3.0-update-list" class="list-disc list-inside text-gray-300 text-sm space-y-1"></ul></div></div>
+                    <div class="bg-gray-700 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-settings">
+                            <h3 class="text-lg font-semibold text-white">설정</h3>
+                            <svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div id="v0.3.0-content-settings" class="px-4 pb-4 hidden">
+                            <button id="v0.3.0-logout-button" class="w-full bg-red-600 hover:bg-red-700 font-bold py-2 px-6 rounded-lg">로그아웃</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="v0.3.0-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
+        </div>
+
+        <!-- 
+        ==========================================
+        v.0.4.0 게임 컨테이너
+        ==========================================
+        -->
+        <div id="v1.0.0-container" class="hidden">
+            <div class="flex flex-col lg:flex-row w-full h-screen">
+                <!-- 왼쪽: 3D 뷰어 & 날씨 --><div id="v1.0.0-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black transition-all duration-300">
+                    <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20 grid grid-cols-2 gap-x-6 gap-y-2">
+                        <div><h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2><div id="v1.0.0-current-cube-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-cube-price-change" class="text-md font-medium text-gray-300">-</div></div>
+                        <div><h2 class="text-sm font-semibold text-purple-300 uppercase">LUNAR-KRW</h2><div id="v1.0.0-current-lunar-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-lunar-price-change" class="text-md font-medium text-gray-300">-</div></div>
+                        <div><h2 class="text-sm font-semibold text-yellow-300 uppercase">ENERGY-KRW</h2><div id="v1.0.0-current-energy-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-energy-price-change" class="text-md font-medium text-gray-300">-</div></div>
+                        <div><h2 class="text-sm font-semibold text-pink-300 uppercase">PRISM-KRW</h2><div id="v1.0.0-current-prism-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-prism-price-change" class="text-md font-medium text-gray-300">-</div></div>
+                        <div id="v1.0.0-time-container" class="hidden mt-2 col-span-1"><h2 class="text-sm font-semibold text-gray-300 uppercase">GAME TIME</h2><div id="v1.0.0-game-time" class="text-xl font-bold text-white">09:00 ☀️</div></div>
+                        <div id="v1.0.0-weather-container" class="hidden mt-2 col-span-1"><h2 class="text-sm font-semibold text-gray-300 uppercase">WEATHER</h2><div id="v1.0.0-weather-display" class="text-xl font-bold text-white">맑음 ☀️</div></div>
+                    </div>
+                    <div id="v1.0.0-upgrade-container" class="absolute bottom-4 left-4 flex flex-col md:flex-row gap-4 items-start md:items-end z-20">
+                         <div id="v1.0.0-passive-income-display" class="bg-black/50 backdrop-blur-sm p-3 rounded-lg shadow-xl hidden"><h3 class="text-sm font-semibold text-green-300">패시브 수입</h3><div id="v1.0.0-income-per-second" class="text-lg font-bold text-white">+0 KRW / sec</div></div>
+                    </div>
+                    <div id="v1.0.0-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3>
+                            <p class="text-gray-300 mb-4">큐브를 활성화하고 초당 100 KRW를 생산하려면 1,000,000 KRW가 필요합니다.</p>
+                            <button id="v1.0.0-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">1,000,000 KRW에 구매</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 오른쪽: 대시보드 --><div class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+                    <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터 <span class="text-lg text-yellow-300">(v.0.4.0 날씨 업데이트)</span></h1>
+                    
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-assets" class="px-4 pb-4"><div class="grid grid-cols-2 md:grid-cols-3 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="v1.0.0-user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="v1.0.0-user-cubes" class="text-2xl font-bold text-blue-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">루나 (LUNAR)</h3><div id="v1.0.0-user-lunar" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">에너지 (ENERGY)</h3><div id="v1.0.0-user-energy" class="text-2xl font-bold text-yellow-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="v1.0.0-user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
+
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-computer"><h3 class="text-lg font-semibold text-white">채굴 컴퓨터</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-computer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-computer" class="px-4 pb-4"><div id="v1.0.0-computer-info" class="bg-gray-600 p-4 rounded-lg text-center"><p id="v1.0.0-computer-tier-text">컴퓨터 없음</p><p id="v1.0.0-computer-stats-text" class="text-xs text-gray-400 mt-1"></p><button id="v1.0.0-computer-upgrade-button" class="mt-4 bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg">구매 (Tier 1)</button></div></div></div>
+                    
+                    <div class="bg-gray-700 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-shop">
+                            <h3 class="text-lg font-semibold text-white">상점</h3>
+                            <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-shop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div id="v1.0.0-content-shop" class="px-4 pb-4 hidden">
+                            <div id="v1.0.0-shop-items" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <!-- JS will populate this -->
                             </div>
                         </div>
                     </div>
+
+                    <div id="v1.0.0-sleep-section" class="bg-gray-700 rounded-lg shadow-lg hidden">
+                        <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-sleep">
+                            <h3 class="text-lg font-semibold text-white">수면</h3>
+                            <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-sleep-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div id="v1.0.0-content-sleep" class="px-4 pb-4 hidden">
+                            <div class="flex items-center gap-4">
+                                <p class="text-gray-300 text-sm flex-grow">밤에 잠을 자서 아침 8시까지 시간을 건너뜁니다.</p>
+                                <button id="v1.0.0-sleep-button" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg btn-disabled">수면</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="v1.0.0-almanac-section" class="bg-gray-700 rounded-lg shadow-lg hidden">
+                        <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-almanac">
+                            <h3 class="text-lg font-semibold text-white">날씨 도감</h3>
+                            <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-almanac-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div id="v1.0.0-content-almanac" class="px-4 pb-4 hidden">
+                            <div id="v1.0.0-almanac-content" class="space-y-3">
+                                <!-- JS will populate this -->
+                            </div>
+                        </div>
+                    </div>
+                                    
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-trade"><h3 class="text-lg font-semibold text-white">코인 거래</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-trade-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-trade" class="px-4 pb-4"><div id="v1.0.0-trade-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div></div>
+                    
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-charts"><h3 class="text-lg font-semibold text-white">실시간 차트</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-charts" class="px-4 pb-4"><nav class="flex border-b border-gray-600 mb-4"><button id="v1.0.0-chart-tab-cube" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">CUBE</button><button id="v1.0.0-chart-tab-lunar" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">LUNAR</button><button id="v1.0.0-chart-tab-energy" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white tab-active">ENERGY</button><button id="v1.0.0-chart-tab-prism" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">PRISM</button></nav><div id="v1.0.0-chart-cube-container" class="h-40 hidden"><canvas id="v1.0.0-price-chart-cube"></canvas></div><div id="v1.0.0-chart-lunar-container" class="h-40 hidden"><canvas id="v1.0.0-price-chart-lunar"></canvas></div><div id="v1.0.0-chart-energy-container" class="h-40"><canvas id="v1.0.0-price-chart-energy"></canvas></div><div id="v1.0.0-chart-prism-container" class="h-40 hidden"><canvas id="v1.0.0-price-chart-prism"></canvas></div></div></div>
+
+                    <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="v1.0.0-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v1.0.0-code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
+                    
+                    <div class="bg-gray-700 rounded-lg shadow-lg">
+                        <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-settings">
+                            <h3 class="text-lg font-semibold text-white">설정</h3>
+                            <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-settings-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                        <div id="v1.0.0-content-settings" class="px-4 pb-4 hidden">
+                            <button id="v1.0.0-logout-button" class="w-full bg-red-600 hover:bg-red-700 font-bold py-2 px-6 rounded-lg">로그아웃</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="v0.3.0-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v0.3.0-code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v0.3.0-toggle-updates"><h3 class="text-lg font-semibold text-white">업데이트 내역 <span id="v0.3.0-version-display"></span></h3><svg class="w-5 h-5 text-gray-400" id="v0.3.0-toggle-updates-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v0.3.0-content-updates" class="px-4 pb-4 hidden"><ul id="v0.3.0-update-list" class="list-disc list-inside text-gray-300 text-sm space-y-1"></ul></div></div>
             </div>
+            <div id="v1.0.0-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
+            <div id="v1.0.0-internet-outage" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 text-center"><h2 class="text-4xl font-bold text-red-500">인터넷 연결 끊김 (날씨 영향)</h2></div>
         </div>
-        <div id="v0.3.0-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
+    </main>
+
+    <div id="preview-timer-banner" class="hidden fixed bottom-4 right-4 bg-purple-600 text-white p-3 rounded-lg shadow-xl z-50 font-mono">
+        v.0.4.0 프리뷰 남은 시간: <span id="preview-timer">05:00</span>
     </div>
 
-    <!-- 
-    ==========================================
-    v.0.4.0 게임 컨테이너
-    ==========================================
-    -->
-    <div id="v1.0.0-container" class="hidden">
-        <div class="flex flex-col lg:flex-row w-full h-screen">
-            <!-- 왼쪽: 3D 뷰어 & 날씨 --><div id="v1.0.0-canvas-container" class="lg:w-1/2 w-full h-1/2 lg:h-full relative bg-black transition-all duration-300">
-                <div class="absolute top-4 left-4 bg-black/50 backdrop-blur-sm p-4 rounded-lg shadow-xl z-20 grid grid-cols-2 gap-x-6 gap-y-2">
-                    <div><h2 class="text-sm font-semibold text-blue-300 uppercase">CUBE-KRW</h2><div id="v1.0.0-current-cube-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-cube-price-change" class="text-md font-medium text-gray-300">-</div></div>
-                    <div><h2 class="text-sm font-semibold text-purple-300 uppercase">LUNAR-KRW</h2><div id="v1.0.0-current-lunar-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-lunar-price-change" class="text-md font-medium text-gray-300">-</div></div>
-                    <div><h2 class="text-sm font-semibold text-yellow-300 uppercase">ENERGY-KRW</h2><div id="v1.0.0-current-energy-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-energy-price-change" class="text-md font-medium text-gray-300">-</div></div>
-                    <div><h2 class="text-sm font-semibold text-pink-300 uppercase">PRISM-KRW</h2><div id="v1.0.0-current-prism-price" class="text-2xl font-bold text-white">- KRW</div><div id="v1.0.0-prism-price-change" class="text-md font-medium text-gray-300">-</div></div>
-                    <div id="v1.0.0-time-container" class="hidden mt-2 col-span-1"><h2 class="text-sm font-semibold text-gray-300 uppercase">GAME TIME</h2><div id="v1.0.0-game-time" class="text-xl font-bold text-white">09:00 ☀️</div></div>
-                    <div id="v1.0.0-weather-container" class="hidden mt-2 col-span-1"><h2 class="text-sm font-semibold text-gray-300 uppercase">WEATHER</h2><div id="v1.0.0-weather-display" class="text-xl font-bold text-white">맑음 ☀️</div></div>
-                </div>
-                <div id="v1.0.0-upgrade-container" class="absolute bottom-4 left-4 flex flex-col md:flex-row gap-4 items-start md:items-end z-20">
-                     <div id="v1.0.0-passive-income-display" class="bg-black/50 backdrop-blur-sm p-3 rounded-lg shadow-xl hidden"><h3 class="text-sm font-semibold text-green-300">패시브 수입</h3><div id="v1.0.0-income-per-second" class="text-lg font-bold text-white">+0 KRW / sec</div></div>
-                </div>
-                <div id="v1.0.0-cube-purchase-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col justify-center items-center text-center p-4 z-10">
-                    <div>
-                        <h3 class="text-2xl font-bold mb-2">3D 큐브 잠금 해제</h3>
-                        <p class="text-gray-300 mb-4">큐브를 활성화하고 초당 100 KRW를 생산하려면 1,000,000 KRW가 필요합니다.</p>
-                        <button id="v1.0.0-buy-cube-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">1,000,000 KRW에 구매</button>
-                    </div>
-                </div>
-            </div>
-            <!-- 오른쪽: 대시보드 --><div class="lg:w-1/2 w-full h-1/2 lg:h-full p-6 bg-gray-800 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
-                <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터 <span class="text-lg text-yellow-300">(v.0.4.0 날씨 업데이트)</span></h1>
-                
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-assets" class="px-4 pb-4"><div class="grid grid-cols-2 md:grid-cols-3 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="v1.0.0-user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="v1.0.0-user-cubes" class="text-2xl font-bold text-blue-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">루나 (LUNAR)</h3><div id="v1.0.0-user-lunar" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">에너지 (ENERGY)</h3><div id="v1.0.0-user-energy" class="text-2xl font-bold text-yellow-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="v1.0.0-user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
+    <!-- Firebase SDK (Software Development Kit) -->
+    <!-- v8.10.1 is used as it's a stable version compatible with the web API used in the tutorial -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-computer"><h3 class="text-lg font-semibold text-white">채굴 컴퓨터</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-computer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-computer" class="px-4 pb-4"><div id="v1.0.0-computer-info" class="bg-gray-600 p-4 rounded-lg text-center"><p id="v1.0.0-computer-tier-text">컴퓨터 없음</p><p id="v1.0.0-computer-stats-text" class="text-xs text-gray-400 mt-1"></p><button id="v1.0.0-computer-upgrade-button" class="mt-4 bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg">구매 (Tier 1)</button></div></div></div>
-                
-                <div class="bg-gray-700 rounded-lg shadow-lg">
-                    <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-shop">
-                        <h3 class="text-lg font-semibold text-white">상점</h3>
-                        <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-shop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                    <div id="v1.0.0-content-shop" class="px-4 pb-4 hidden">
-                        <div id="v1.0.0-shop-items" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- JS will populate this -->
-                        </div>
-                    </div>
-                </div>
+    <script>
+      // Firebase 앱 구성
+      const firebaseConfig = {
+        apiKey: "AIzaSyAMkZ-JoMxZEc2mXbIlZfhf_bVr-wLSHjo",
+        authDomain: "cube-coin-simulator.firebaseapp.com",
+        projectId: "cube-coin-simulator",
+        storageBucket: "cube-coin-simulator.appspot.com",
+        messagingSenderId: "734525632764",
+        appId: "1:734525632764:web:ba9263fefeeca5726b6779",
+        measurementId: "G-LD98Y6BZ3H"
+      };
+      
+      // Firebase 초기화
+      if (firebase.apps.length === 0) {
+        firebase.initializeApp(firebaseConfig);
+      }
+    </script>
 
-                <div id="v1.0.0-sleep-section" class="bg-gray-700 rounded-lg shadow-lg hidden">
-                    <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-sleep">
-                        <h3 class="text-lg font-semibold text-white">수면</h3>
-                        <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-sleep-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                    <div id="v1.0.0-content-sleep" class="px-4 pb-4 hidden">
-                        <div class="flex items-center gap-4">
-                            <p class="text-gray-300 text-sm flex-grow">밤에 잠을 자서 아침 8시까지 시간을 건너뜁니다.</p>
-                            <button id="v1.0.0-sleep-button" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg btn-disabled">수면</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="v1.0.0-almanac-section" class="bg-gray-700 rounded-lg shadow-lg hidden">
-                    <div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-almanac">
-                        <h3 class="text-lg font-semibold text-white">날씨 도감</h3>
-                        <svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-almanac-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                    </div>
-                    <div id="v1.0.0-content-almanac" class="px-4 pb-4 hidden">
-                        <div id="v1.0.0-almanac-content" class="space-y-3">
-                            <!-- JS will populate this -->
-                        </div>
-                    </div>
-                </div>
-                                
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-trade"><h3 class="text-lg font-semibold text-white">코인 거래</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-trade-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-trade" class="px-4 pb-4"><div id="v1.0.0-trade-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div></div>
-                
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-charts"><h3 class="text-lg font-semibold text-white">실시간 차트</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-charts" class="px-4 pb-4"><nav class="flex border-b border-gray-600 mb-4"><button id="v1.0.0-chart-tab-cube" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">CUBE</button><button id="v1.0.0-chart-tab-lunar" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">LUNAR</button><button id="v1.0.0-chart-tab-energy" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white tab-active">ENERGY</button><button id="v1.0.0-chart-tab-prism" class="py-2 px-4 border-b-2 border-transparent text-gray-400 hover:text-white">PRISM</button></nav><div id="v1.0.0-chart-cube-container" class="h-40 hidden"><canvas id="v1.0.0-price-chart-cube"></canvas></div><div id="v1.0.0-chart-lunar-container" class="h-40 hidden"><canvas id="v1.0.0-price-chart-lunar"></canvas></div><div id="v1.0.0-chart-energy-container" class="h-40"><canvas id="v1.0.0-price-chart-energy"></canvas></div><div id="v1.0.0-chart-prism-container" class="h-40 hidden"><canvas id="v1.0.0-price-chart-prism"></canvas></div></div></div>
-
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="v1.0.0-toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400" id="v1.0.0-toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="v1.0.0-content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="v1.0.0-code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="v1.0.0-code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
-            </div>
-        </div>
-        <div id="v1.0.0-notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>
-        <div id="v1.0.0-internet-outage" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-50 text-center"><h2 class="text-4xl font-bold text-red-500">인터넷 연결 끊김 (날씨 영향)</h2></div>
-    </div>
 
     <script type="module" src="index.tsx"></script>
 </body>
