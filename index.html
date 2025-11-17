@@ -39,6 +39,15 @@
     </style>
 </head>
 <body class="bg-gray-900 text-white">
+    <!-- Global Announcement Banner -->
+    <div id="global-announcement" class="hidden bg-indigo-500 text-white p-2 font-bold flex justify-between items-center">
+        <span id="announcement-text"></span>
+        <div class="flex items-center">
+            <span id="announcement-timer" class="text-xs mr-4"></span>
+            <button id="close-announcement" class="font-bold text-xl leading-none transition-transform hover:scale-125">&times;</button>
+        </div>
+    </div>
+    
     <!-- v2 Update Banner -->
     <div id="update-banner" class="hidden bg-yellow-500 text-black text-center p-2 font-bold">
         v2 업데이트가 <span id="countdown-timer"></span> 후에 진행됩니다!
@@ -76,6 +85,100 @@
             </div>
         </div>
     </div>
+
+    <!-- Dev Panel (Modal) -->
+    <div id="dev-panel" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl text-white flex flex-col max-h-full">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">개발자 패널</h2>
+                <button id="close-dev-panel" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div class="overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                <!-- Announcement -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">📢 전체 공지</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="dev-announcement-text" class="w-full bg-gray-800 p-2 rounded border border-gray-600" placeholder="공지 내용">
+                        <input type="number" id="dev-announcement-duration" class="w-24 bg-gray-800 p-2 rounded border border-gray-600" placeholder="초" value="15">
+                        <button id="dev-post-announcement-btn" class="bg-blue-600 hover:bg-blue-700 font-bold px-4 rounded">게시</button>
+                        <button id="dev-clear-announcement-btn" class="bg-gray-600 hover:bg-gray-500 font-bold px-4 rounded">지우기</button>
+                    </div>
+                </div>
+                 <!-- Game Speed -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">⚙️ 게임 속도 조절</h3>
+                    <div class="flex gap-2">
+                        <input type="number" id="dev-speed-input" class="w-full bg-gray-800 p-2 rounded border border-gray-600" min="1" max="10" value="1" placeholder="게임 배속 (1-10)">
+                        <button id="dev-set-speed-btn" class="bg-teal-600 hover:bg-teal-700 font-bold px-4 rounded">속도 설정</button>
+                    </div>
+                </div>
+                <!-- Chat Control -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">💬 채팅 관리</h3>
+                    <button id="dev-clear-chat-btn" class="w-full bg-red-600 hover:bg-red-700 font-bold p-2 rounded">채팅 기록 전체 삭제</button>
+                </div>
+                <!-- Promo Code -->
+                 <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">🎁 프로모션 코드 생성</h3>
+                    <div class="space-y-2">
+                        <input type="text" id="dev-code-id" placeholder="코드 (예: WELCOME10)" class="w-full bg-gray-800 p-2 rounded border border-gray-600 uppercase">
+                        <select id="dev-code-reward-type" class="w-full bg-gray-800 p-2 rounded border border-gray-600">
+                            <option value="userCash">현금 (KRW)</option>
+                            <option value="farmCoin">농장 코인 (TK)</option>
+                            <option value="userCubes">CUBE</option>
+                            <option value="userLunar">LUNAR</option>
+                            <option value="userEnergy">ENERGY</option>
+                            <option value="userPrisms">PRISM</option>
+                        </select>
+                        <input type="number" id="dev-code-reward-amount" placeholder="보상 수량" class="w-full bg-gray-800 p-2 rounded border border-gray-600">
+                        <button id="dev-create-code-btn" class="w-full bg-green-600 hover:bg-green-700 font-bold p-2 rounded">코드 생성</button>
+                    </div>
+                </div>
+                <!-- Give Money -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">💰 전체 돈 지급</h3>
+                    <div class="flex gap-2">
+                        <input type="number" id="dev-money-amount" class="w-full bg-gray-800 p-2 rounded border border-gray-600" placeholder="지급할 KRW 금액" value="100000">
+                        <button id="dev-give-money-btn" class="bg-green-600 hover:bg-green-700 font-bold px-4 rounded">지급</button>
+                    </div>
+                </div>
+                <!-- Weather Control -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">🌦️ 날씨 변경</h3>
+                    <div class="flex gap-2">
+                        <select id="dev-weather-select" class="w-full bg-gray-800 p-2 rounded border border-gray-600">
+                            <!-- Options will be populated by JS -->
+                        </select>
+                        <button id="dev-set-weather-btn" class="bg-purple-600 hover:bg-purple-700 font-bold px-4 rounded">변경</button>
+                        <button id="dev-clear-weather-btn" class="bg-gray-600 hover:bg-gray-500 font-bold px-4 rounded">초기화</button>
+                    </div>
+                </div>
+                <!-- Price Control -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2">💹 코인 가격 고정</h3>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="number" id="dev-price-cube" class="w-full bg-gray-800 p-2 rounded border border-gray-600" placeholder="CUBE 가격">
+                        <input type="number" id="dev-price-lunar" class="w-full bg-gray-800 p-2 rounded border border-gray-600" placeholder="LUNAR 가격">
+                        <input type="number" id="dev-price-energy" class="w-full bg-gray-800 p-2 rounded border border-gray-600" placeholder="ENERGY 가격">
+                        <input type="number" id="dev-price-prism" class="w-full bg-gray-800 p-2 rounded border border-gray-600" placeholder="PRISM 가격">
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="dev-set-prices-btn" class="flex-1 bg-yellow-600 hover:bg-yellow-700 font-bold p-2 rounded">가격 고정</button>
+                        <button id="dev-clear-prices-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 font-bold p-2 rounded">고정 해제</button>
+                    </div>
+                </div>
+                 <!-- User Data Reset -->
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold mb-2 text-red-400">⚠️ 유저 데이터 초기화</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="dev-reset-uid" placeholder="초기화할 유저의 UID" class="w-full bg-gray-900 p-2 rounded border border-gray-600">
+                        <button id="dev-reset-user-btn" class="bg-red-800 hover:bg-red-700 font-bold px-4 rounded">데이터 삭제</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <main id="main-content" class="h-screen flex flex-col hidden">
         <!-- 
@@ -118,13 +221,17 @@
         게임 컨테이너
         ==========================================
         -->
-        <div id="app-container" class="flex flex-col md:flex-row flex-grow overflow-hidden">
-            <!-- 좌측 패널: 3D 큐브 및 수입원 관리 -->
-            <div class="w-full md:w-1/3 bg-gray-800 p-6 flex flex-col">
-                 <div class="bg-gray-700 rounded-lg shadow-lg flex flex-col flex-grow">
-                    <div class="flex justify-between items-center p-4"><h3 class="text-lg font-semibold text-white">수입원 관리</h3></div>
-                    <div id="content-income" class="px-4 pb-4 flex flex-col flex-grow">
-                        <div class="relative w-full bg-gray-900 rounded-lg mb-4 overflow-hidden flex-grow">
+        <div id="app-container" class="flex flex-grow overflow-hidden">
+            <!-- 좌측 패널: 수입원 관리 -->
+            <div class="w-1/4 bg-gray-800 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                <!-- 수입원 관리 -->
+                <div class="bg-gray-700 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-income">
+                        <h3 class="text-lg font-semibold text-white">수입원 관리</h3>
+                        <svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-income-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div id="content-income" class="px-4 pb-4">
+                        <div class="relative w-full bg-gray-900 rounded-lg mb-4 overflow-hidden h-80">
                             <div id="cube-container" class="absolute inset-0"></div>
                             <div id="cube-purchase-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-800/80 p-4">
                                 <div class="bg-gray-600 p-6 rounded-lg text-center shadow-xl">
@@ -169,8 +276,8 @@
                 </div>
             </div>
 
-            <!-- 우측 패널: 대시보드 -->
-            <div class="w-full md:w-2/3 p-6 bg-gray-900 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+            <!-- 중앙 패널: 대시보드 -->
+            <div class="w-1/2 p-6 bg-gray-900 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
                 <h1 class="text-3xl font-bold text-white mb-2">대시보드</h1>
                 
                 <!-- 섹션 컨테이너 -->
@@ -193,6 +300,25 @@
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-farm"><h3 class="text-lg font-semibold text-white">농사</h3><svg class="w-5 h-5 text-gray-400" id="toggle-farm-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-farm" class="px-4 pb-4 hidden"><div class="flex flex-col lg:flex-row gap-4"><div class="lg:w-1/2" id="farm-plot-section"></div><div class="lg:w-1/2 flex flex-col gap-4"><div id="seed-shop-container"></div><div id="inventory-container"></div></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-skills"><h3 class="text-lg font-semibold text-white">스킬 트리</h3><svg class="w-5 h-5 text-gray-400" id="toggle-skills-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-skills" class="px-4 pb-4 hidden"><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div id="skills-cube-container"></div><div id="skills-farm-container"></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-code" class="px-4 pb-4"><div class="flex gap-4"><input type="text" id="code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="코드 입력"><button id="code-submit-button" class="bg-purple-600 hover:bg-purple-700 font-bold py-2 px-6 rounded-lg">입력</button></div></div></div>
+            </div>
+
+            <!-- 우측 패널: 채팅 -->
+            <div class="w-1/4 bg-gray-800 p-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+                <div class="bg-gray-700 rounded-lg shadow-lg flex flex-col flex-grow">
+                    <div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-chat">
+                        <h3 class="text-lg font-semibold text-white">채팅</h3>
+                        <svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-chat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div id="content-chat" class="px-4 pb-4 flex flex-col flex-grow">
+                        <div id="chat-messages" class="flex-grow bg-gray-800 rounded-md p-3 overflow-y-auto custom-scrollbar mb-3 space-y-2 text-sm">
+                            <!-- Messages will be appended here -->
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="chat-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="메시지 입력...">
+                            <button id="chat-send-button" class="bg-blue-600 hover:bg-blue-700 font-bold py-2 px-6 rounded-lg">전송</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="notification" class="fixed bottom-6 right-6 bg-red-500 text-white p-4 rounded-lg shadow-xl transition-all duration-300 opacity-0 translate-y-10 z-50"></div>

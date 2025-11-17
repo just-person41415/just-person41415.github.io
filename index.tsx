@@ -20,7 +20,7 @@ const firebaseConfig = {
   storageBucket: "real-d1d0a.appspot.com",
   messagingSenderId: "362480200866",
   appId: "1:362480200866:web:ae6e59d94a9e3fef51fbfb",
-  measurementId: "G-Q40RNTCZW5"
+  measurementId: "G-Q-40RNTCZW5"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -92,10 +92,19 @@ let gameTime: Date;
 // FIX: Changed to `any` to allow dynamic property assignment and avoid type errors.
 let dom: any = {};
 let selectedSeed: string | null = null;
+let notificationTimeout: any = null;
+let announcementTimeout: any = null;
+let announcementInterval: any = null;
+let userNickname: string | null = null;
 
 // --- 3D 렌더링 관련 ---
 let scene: any, camera: any, renderer: any, cube: any;
 let chartCube: any, chartLunar: any, chartEnergy: any, chartPrism: any;
+
+// --- 전역 상태 (관리자용) ---
+let globalWeatherOverride: string | null = null;
+let globalPriceOverrides: any = null;
+let currentGameSpeed = 1;
 
 // --- 게임 상태 관리 ---
 // 모든 게임 데이터를 포함하는 단일 객체.
@@ -150,6 +159,7 @@ const getInitialGameState = () => ({
         farm_fertilizer: 0, farm_lucky_harvest: 0, farm_expand: 0,
     },
     exceptionalState: { isActive: false, expiresAt: 0 },
+    processedEvents: {},
 });
 
 gameState = getInitialGameState();
@@ -268,6 +278,9 @@ function initGame() {
         transactionHistoryList: document.getElementById('transaction-history-list'),
         farmPlotSection: document.getElementById('farm-plot-section'), seedShopContainer: document.getElementById('seed-shop-container'), inventoryContainer: document.getElementById('inventory-container'),
         skillsCubeContainer: document.getElementById('skills-cube-container'), skillsFarmContainer: document.getElementById('skills-farm-container'),
+        chatMessages: document.getElementById('chat-messages'),
+        chatInput: document.getElementById('chat-input'),
+        chatSendButton: document.getElementById('chat-send-button'),
     };
     
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
@@ -276,6 +289,9 @@ function initGame() {
     if (dom.upgradeLunarButton) dom.upgradeLunarButton.addEventListener('click', handleUpgradeLunar);
     if (dom.upgradeEnergyButton) dom.upgradeEnergyButton.addEventListener('click', handleUpgradeEnergy);
     if (dom.upgradePrismButton) dom.upgradePrismButton.addEventListener('click', handleUpgradePrism);
+    if (dom.chatSendButton) dom.chatSendButton.addEventListener('click', handleSendMessage);
+    if (dom.chatInput) dom.chatInput.addEventListener('keydown', (e: KeyboardEvent) => { if(e.key === 'Enter') handleSendMessage(); });
+
     ['cube', 'lunar', 'energy', 'prism'].forEach(c => dom[`chartTab${c.charAt(0).toUpperCase() + c.slice(1)}`]?.addEventListener('click', () => switchChart(c)));
     
     populateTradeUI();
@@ -285,6 +301,11 @@ function initGame() {
     init3D();
     updateFarmUI();
     updateSkillsUI();
+}
+
+function restartGameLoop() {
+    if (gameLoopInterval) clearInterval(gameLoopInterval);
+    gameLoopInterval = setInterval(gameLoop, 250 / currentGameSpeed);
 }
 
 function startGame() {
@@ -299,7 +320,7 @@ function startGame() {
     restoreUIState();
     updateTrophyUI();
     updateTransactionHistoryUI();
-    gameLoopInterval = setInterval(gameLoop, 250);
+    restartGameLoop();
     miningInterval = setInterval(handleMining, 60000); // 1분마다 채굴
     startPriceUpdateLoops();
     animate();
@@ -324,11 +345,31 @@ function stopGame() {
 
 function showNotification(message: string, isError = true) {
     if (!dom.notification) return;
-    dom.notification.textContent = message;
-    dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`;
-    setTimeout(() => {
+
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+
+    dom.notification.innerHTML = `
+        <span>${message}</span>
+        <button id="notification-close-btn" class="ml-4 font-bold text-xl leading-none transition-transform hover:scale-125">&times;</button>
+    `;
+    
+    // Set base classes and color, then remove hiding classes
+    dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 transition-all duration-300 flex items-center justify-between ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+    dom.notification.classList.remove('opacity-0', 'translate-y-10');
+    dom.notification.classList.add('opacity-100', 'translate-y-0');
+
+    const hideNotification = () => {
+        if (!dom.notification) return;
+        dom.notification.classList.remove('opacity-100', 'translate-y-0');
         dom.notification.classList.add('opacity-0', 'translate-y-10');
-    }, 3000);
+        notificationTimeout = null;
+    };
+
+    document.getElementById('notification-close-btn')?.addEventListener('click', hideNotification, { once: true });
+
+    notificationTimeout = setTimeout(hideNotification, 3000);
 }
 
 function updateUI() {
@@ -651,11 +692,20 @@ function priceUpdateLoopCube() {
         return;
     }
     const state = gameState;
-    state.lastPrice = state.currentPrice;
-    const result = getNewPrice(state.currentPrice, 'cube');
-    state.currentPrice = result.price;
-    state.fluctuation['cube'] = result.magnitude;
-    updateChartData(chartCube, state.currentPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+    
+    if (globalPriceOverrides && globalPriceOverrides.cube) {
+        if (state.currentPrice !== globalPriceOverrides.cube) {
+            state.lastPrice = state.currentPrice;
+            state.currentPrice = globalPriceOverrides.cube;
+            updateChartData(chartCube, state.currentPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+        }
+    } else {
+        state.lastPrice = state.currentPrice;
+        const result = getNewPrice(state.currentPrice, 'cube');
+        state.currentPrice = result.price;
+        state.fluctuation['cube'] = result.magnitude;
+        updateChartData(chartCube, state.currentPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+    }
 
     priceUpdateTimeoutCube = setTimeout(priceUpdateLoopCube, 2000);
 }
@@ -668,11 +718,20 @@ function priceUpdateLoopLunar() {
         return;
     }
     const state = gameState;
-    state.lastLunarPrice = state.currentLunarPrice;
-    const result = getNewPrice(state.currentLunarPrice, 'lunar');
-    state.currentLunarPrice = result.price;
-    state.fluctuation['lunar'] = result.magnitude;
-    updateChartData(chartLunar, state.currentLunarPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    if (globalPriceOverrides && globalPriceOverrides.lunar) {
+        if (state.currentLunarPrice !== globalPriceOverrides.lunar) {
+            state.lastLunarPrice = state.currentLunarPrice;
+            state.currentLunarPrice = globalPriceOverrides.lunar;
+            updateChartData(chartLunar, state.currentLunarPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+        }
+    } else {
+        state.lastLunarPrice = state.currentLunarPrice;
+        const result = getNewPrice(state.currentLunarPrice, 'lunar');
+        state.currentLunarPrice = result.price;
+        state.fluctuation['lunar'] = result.magnitude;
+        updateChartData(chartLunar, state.currentLunarPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+    }
     
     priceUpdateTimeoutLunar = setTimeout(priceUpdateLoopLunar, interval);
 }
@@ -685,11 +744,20 @@ function priceUpdateLoopEnergy() {
         return;
     }
     const state = gameState;
-    state.lastEnergyPrice = state.currentEnergyPrice;
-    const result = getNewPrice(state.currentEnergyPrice, 'energy');
-    state.currentEnergyPrice = result.price;
-    state.fluctuation['energy'] = result.magnitude;
-    updateChartData(chartEnergy, state.currentEnergyPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    if (globalPriceOverrides && globalPriceOverrides.energy) {
+        if (state.currentEnergyPrice !== globalPriceOverrides.energy) {
+            state.lastEnergyPrice = state.currentEnergyPrice;
+            state.currentEnergyPrice = globalPriceOverrides.energy;
+            updateChartData(chartEnergy, state.currentEnergyPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+        }
+    } else {
+        state.lastEnergyPrice = state.currentEnergyPrice;
+        const result = getNewPrice(state.currentEnergyPrice, 'energy');
+        state.currentEnergyPrice = result.price;
+        state.fluctuation['energy'] = result.magnitude;
+        updateChartData(chartEnergy, state.currentEnergyPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+    }
 
     priceUpdateTimeoutEnergy = setTimeout(priceUpdateLoopEnergy, interval);
 }
@@ -700,11 +768,20 @@ function priceUpdateLoopPrism() {
         return;
     }
     const state = gameState;
-    state.lastPrismPrice = state.currentPrismPrice;
-    const result = getNewPrice(state.currentPrismPrice, 'prism');
-    state.currentPrismPrice = result.price;
-    state.fluctuation['prism'] = result.magnitude;
-    updateChartData(chartPrism, state.currentPrismPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    if (globalPriceOverrides && globalPriceOverrides.prism) {
+        if (state.currentPrismPrice !== globalPriceOverrides.prism) {
+            state.lastPrismPrice = state.currentPrismPrice;
+            state.currentPrismPrice = globalPriceOverrides.prism;
+            updateChartData(chartPrism, state.currentPrismPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+        }
+    } else {
+        state.lastPrismPrice = state.currentPrismPrice;
+        const result = getNewPrice(state.currentPrismPrice, 'prism');
+        state.currentPrismPrice = result.price;
+        state.fluctuation['prism'] = result.magnitude;
+        updateChartData(chartPrism, state.currentPrismPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+    }
 
     priceUpdateTimeoutPrism = setTimeout(priceUpdateLoopPrism, 3000);
 }
@@ -717,51 +794,60 @@ function gameLoop() {
 
     gameTime.setMinutes(gameTime.getMinutes() + 1);
 
-    // Weather
-    state.weatherCounter++;
-    if (state.weatherCounter >= 120) { // 30초마다 날씨 변경 (250ms * 120)
-        state.weatherCounter = 0;
-        let newWeather = '맑음';
+    if (globalWeatherOverride) {
+        if(state.weather !== globalWeatherOverride) {
+            state.weather = globalWeatherOverride;
+            showNotification(`관리자에 의해 날씨가 ${state.weather}(으)로 변경되었습니다!`, false);
+            populateFarmShop();
+            updateWeatherAlmanacUI();
+        }
+    } else {
+        // Weather
+        state.weatherCounter++;
+        if (state.weatherCounter >= 120) { // 30초마다 날씨 변경 (250ms * 120 at 1x speed)
+            state.weatherCounter = 0;
+            let newWeather = '맑음';
 
-        if (state.nextWeatherIsRainbow) {
-            newWeather = '무지개';
-            state.nextWeatherIsRainbow = false;
-        } else if (state.nextWeatherIsCloudy) {
-            newWeather = '구름';
-            state.nextWeatherIsCloudy = false;
-        } else {
-            let baseProbSunny = 0.6;
-            let baseProbRain = 0.3; // total 0.9 for sunny+rain
-
-            if (state.hasWeatherTrophy) {
-                // 좋은 날씨 (맑음, 비, 무지개) 확률 2.5% 증가
-                 baseProbSunny += 0.015;
-                 baseProbRain += 0.010;
-            }
-            const rand = Math.random();
-            if (rand < baseProbSunny) {
-                newWeather = '맑음';
-            } else if (rand < baseProbSunny + baseProbRain) {
-                newWeather = '비';
-                if (Math.random() < 0.1) { newWeather = '산성비'; }
-                state.nextWeatherIsCloudy = true;
-                if (newWeather === '비' && Math.random() < 0.1) { state.nextWeatherIsRainbow = true; }
+            if (state.nextWeatherIsRainbow) {
+                newWeather = '무지개';
+                state.nextWeatherIsRainbow = false;
+            } else if (state.nextWeatherIsCloudy) {
+                newWeather = '구름';
+                state.nextWeatherIsCloudy = false;
             } else {
-                newWeather = '천둥';
-            }
-        }
-        state.weather = newWeather;
-        populateFarmShop(); // 날씨가 바뀌면 상점 다시 그림 (산성비료)
+                let baseProbSunny = 0.6;
+                let baseProbRain = 0.3; // total 0.9 for sunny+rain
 
-        if (state.weather === '천둥' && Math.random() < 0.05) {
-            state.isInternetOutage = true;
-            state.isInternetOutageCooldown = Date.now() + 30000; // 30 seconds
-            showNotification('천둥 번개로 인해 인터넷 연결이 끊겼습니다!', true);
+                if (state.hasWeatherTrophy) {
+                    // 좋은 날씨 (맑음, 비, 무지개) 확률 2.5% 증가
+                     baseProbSunny += 0.015;
+                     baseProbRain += 0.010;
+                }
+                const rand = Math.random();
+                if (rand < baseProbSunny) {
+                    newWeather = '맑음';
+                } else if (rand < baseProbSunny + baseProbRain) {
+                    newWeather = '비';
+                    if (Math.random() < 0.1) { newWeather = '산성비'; }
+                    state.nextWeatherIsCloudy = true;
+                    if (newWeather === '비' && Math.random() < 0.1) { state.nextWeatherIsRainbow = true; }
+                } else {
+                    newWeather = '천둥';
+                }
+            }
+            state.weather = newWeather;
+            populateFarmShop(); // 날씨가 바뀌면 상점 다시 그림 (산성비료)
+
+            if (state.weather === '천둥' && Math.random() < 0.05) {
+                state.isInternetOutage = true;
+                state.isInternetOutageCooldown = Date.now() + 30000; // 30 seconds
+                showNotification('천둥 번개로 인해 인터넷 연결이 끊겼습니다!', true);
+            }
+            
+            state.experiencedWeathers[state.weather] = true;
+            checkTrophies();
+            updateWeatherAlmanacUI();
         }
-        
-        state.experiencedWeathers[state.weather] = true;
-        checkTrophies();
-        updateWeatherAlmanacUI();
     }
     // Internet Outage
     if (state.isInternetOutage && now > state.isInternetOutageCooldown) {
@@ -786,7 +872,7 @@ function gameLoop() {
             totalIncome *= 2;
         }
     }
-    state.userCash += totalIncome / 4;
+    state.userCash += totalIncome / (4 * (1 / currentGameSpeed)); // Adjust income based on game speed
 
     // Farm Buffs Expiration
     for (const buff in state.farmBuffs) {
@@ -806,7 +892,7 @@ function gameLoop() {
             if (state.farmBuffs.artificialFertilizer) growthMultiplier *= 2;
             if (state.farmBuffs.acidFertilizer) growthMultiplier *= 5;
             
-            plot.currentGrowth += 250 * growthMultiplier;
+            plot.currentGrowth += (250 / (1/currentGameSpeed)) * growthMultiplier;
 
             if (plot.currentGrowth >= plot.totalGrowthTime) {
                 plot.isGrown = true;
@@ -1482,65 +1568,62 @@ async function resetUserData() {
     }
 }
 
-function handleCodeSubmit() {
+async function handleCodeSubmit() {
     const input = document.getElementById('code-input') as HTMLInputElement;
     if (!input) return;
     const code = input.value.trim().toUpperCase();
 
-    if (gameState.usedCodes.includes(code)) {
-        showNotification('이미 사용된 코드입니다.', true);
-        return;
-    }
-
-    let rewardGiven = false;
     if (code === 'RESET') {
         if (confirm('정말로 모든 게임 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
             if (confirm('경고: 두 번째 확인입니다. 모든 진행 상황이 영구적으로 삭제됩니다. 계속하시겠습니까?')) {
                 resetUserData();
             }
         }
-        return; 
-    } else if (code === 'MONEYBAGS') {
-        gameState.userCash += 1000000;
-        showNotification('치트 코드: 1,000,000 KRW가 추가되었습니다!', false);
-        rewardGiven = true;
-    } else if (code === 'UPGRADE') {
-         gameState.isEnergyUpgraded = true;
-         gameState.isPrismUpgraded = true;
-         populateShopItems();
-         restoreUIState();
-         showNotification('치트 코드: 모든 코인 업그레이드 잠금 해제!', false);
-         rewardGiven = true;
-    } else if (code === 'SORRY4DELAY') {
-        gameState.userCubes += 20;
-        showNotification('보상 코드: 20 CUBE 코인을 획득했습니다!', false);
-        rewardGiven = true;
-    } else if (code === 'THANKS4FEEDBACK') {
-        gameState.userEnergy += 1;
-        showNotification('보상 코드: 1 ENERGY 코인을 획득했습니다!', false);
-        rewardGiven = true;
-    } else if (code === 'ICE_CUBE102') {
-        gameState.userCash += 1000000000000;
-        showNotification('개발자 코드: 1조 KRW가 추가되었습니다!', false);
-        rewardGiven = true;
-    } else if (code === 'FARM4TREE') {
-        gameState.seedInventory['banana'] = (gameState.seedInventory['banana'] || 0) + 2;
-        showNotification('보상 코드: 바나나 씨앗 2개를 획득했습니다!', false);
-        updateInventory();
-        rewardGiven = true;
-    } else if (code === 'ICE_CUBE101') {
-        gameState.farmCoin += 1000000;
-        showNotification('개발자 코드: 1,000,000 농장 코인을 획득했습니다!', false);
-        rewardGiven = true;
-    } else {
-        showNotification('유효하지 않은 코드입니다.', true);
+        input.value = '';
+        return;
     }
     
-    if (rewardGiven) {
-        gameState.usedCodes.push(code);
+    if (code === 'DEV.MOD') {
+        document.getElementById('dev-panel')?.classList.remove('hidden');
         input.value = '';
-        updateUI();
-        saveGameState();
+        return;
+    }
+
+    if (gameState.usedCodes.includes(code)) {
+        showNotification('이미 사용된 코드입니다.', true);
+        return;
+    }
+
+    try {
+        const snapshot = await db.ref('promoCodes/' + code).get();
+        if (snapshot.exists()) {
+            const reward = snapshot.val();
+            const rewardType = reward.type; // e.g., 'userCash', 'farmCoin'
+            const rewardAmount = Number(reward.amount);
+
+            if (gameState.hasOwnProperty(rewardType) && !isNaN(rewardAmount)) {
+                gameState[rewardType] += rewardAmount;
+                gameState.usedCodes.push(code);
+
+                const rewardNameMap: { [key: string]: string } = {
+                    userCash: 'KRW', farmCoin: '농장 코인', userCubes: 'CUBE',
+                    userLunar: 'LUNAR', userEnergy: 'ENERGY', userPrisms: 'PRISM'
+                };
+                const rewardName = rewardNameMap[rewardType] || '아이템';
+                showNotification(`코드 보상: ${rewardAmount.toLocaleString()} ${rewardName}을(를) 획득했습니다!`, false);
+                
+                input.value = '';
+                updateUI();
+                saveGameState();
+            } else {
+                showNotification('코드 보상 정보가 잘못되었습니다.', true);
+            }
+        } else {
+            showNotification('유효하지 않은 코드입니다.', true);
+        }
+    } catch (error) {
+        console.error("Error redeeming code:", error);
+        showNotification('코드 확인 중 오류가 발생했습니다.', true);
     }
 }
 
@@ -1675,6 +1758,36 @@ async function loadGameState() {
 }
 
 // =======================================================
+// 채팅 로직
+// =======================================================
+function handleSendMessage() {
+    if (!dom.chatInput || !userNickname) return;
+    const text = dom.chatInput.value.trim();
+    if (text === '') return;
+
+    const message = {
+        nickname: userNickname,
+        text: text,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref('chatMessages').push(message);
+    dom.chatInput.value = '';
+}
+
+function appendChatMessage(message: { nickname: string, text: string }) {
+    if (!dom.chatMessages) return;
+
+    const messageEl = document.createElement('div');
+    const sanitizedText = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    messageEl.innerHTML = `<p><strong class="font-semibold ${message.nickname === userNickname ? 'text-yellow-300' : 'text-blue-300'}">${message.nickname}</strong>: ${sanitizedText}</p>`;
+    
+    dom.chatMessages.appendChild(messageEl);
+    dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
+}
+
+
+// =======================================================
 // 인증 로직
 // =======================================================
 function handleAuthError(error: any) {
@@ -1705,8 +1818,101 @@ async function onLoginSuccess(loginScreen: HTMLElement, mainContent: HTMLElement
     mainContent.classList.remove('hidden');
     logoutButton.classList.remove('hidden');
     
+    // Set nickname for chat
+    if (auth.currentUser && auth.currentUser.email) {
+        userNickname = auth.currentUser.email.split('@')[0];
+    }
+
     initGame();
     startGame();
+
+    // Set up global state listeners
+    db.ref('globalState/announcement').on('value', (snapshot) => {
+        const announcement = snapshot.val();
+        const banner = document.getElementById('global-announcement');
+        const bannerText = document.getElementById('announcement-text');
+        const bannerTimer = document.getElementById('announcement-timer');
+        const closeBtn = document.getElementById('close-announcement');
+
+        if (announcementTimeout) clearTimeout(announcementTimeout);
+        if (announcementInterval) clearInterval(announcementInterval);
+
+        if (banner && bannerText && bannerTimer && closeBtn && announcement && announcement.text) {
+            const duration = announcement.duration || 15;
+            let timeLeft = duration;
+
+            bannerText.textContent = `[공지] ${announcement.text}`;
+            banner.classList.remove('hidden');
+
+            const hideBanner = () => {
+                banner.classList.add('hidden');
+                if (announcementInterval) clearInterval(announcementInterval);
+                if (announcementTimeout) clearTimeout(announcementTimeout);
+            };
+            
+            closeBtn.addEventListener('click', hideBanner, { once: true });
+
+            bannerTimer.textContent = `(${timeLeft}초 후 사라짐)`;
+            announcementInterval = setInterval(() => {
+                timeLeft--;
+                if(bannerTimer) bannerTimer.textContent = `(${timeLeft}초 후 사라짐)`;
+                if (timeLeft <= 0) {
+                    if (announcementInterval) clearInterval(announcementInterval);
+                }
+            }, 1000);
+
+            announcementTimeout = setTimeout(hideBanner, duration * 1000);
+
+        } else if (banner) {
+            banner.classList.add('hidden');
+        }
+    });
+
+    db.ref('globalState/weather').on('value', (snapshot) => {
+        globalWeatherOverride = snapshot.val();
+    });
+
+    db.ref('globalState/priceOverrides').on('value', (snapshot) => {
+        globalPriceOverrides = snapshot.val();
+    });
+    
+    db.ref('globalState/gameSpeed').on('value', (snapshot) => {
+        const speed = snapshot.val() || 1;
+        currentGameSpeed = Math.max(1, Math.min(10, speed)); // Clamp between 1 and 10
+        if(gameLoopInterval) {
+            restartGameLoop();
+        }
+    });
+
+    db.ref('globalState/events').on('child_added', (snapshot) => {
+        const event = snapshot.val();
+        const eventId = snapshot.key;
+
+        if (!gameState.processedEvents) {
+            gameState.processedEvents = {};
+        }
+
+        if (eventId && !gameState.processedEvents[eventId]) {
+            if (event.type === 'GIVE_MONEY') {
+                gameState.userCash += Number(event.amount);
+                showNotification(`관리자로부터 ${Number(event.amount).toLocaleString()} KRW를 받았습니다!`, false);
+            }
+            gameState.processedEvents[eventId] = true;
+        }
+    });
+    
+    // Set up chat listener
+    if(dom.chatMessages) dom.chatMessages.innerHTML = ''; // Clear chat on login
+    db.ref('chatMessages').limitToLast(50).on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        appendChatMessage(message);
+    });
+
+    db.ref('globalState/chatCleared').on('value', (snapshot) => {
+        if(snapshot.exists() && dom.chatMessages) {
+             dom.chatMessages.innerHTML = '';
+        }
+    });
 
     if (window.autosaveInterval) clearInterval(window.autosaveInterval);
     window.autosaveInterval = setInterval(saveGameState, 30000);
@@ -1744,10 +1950,16 @@ async function handleRegister(loginScreen: HTMLElement, mainContent: HTMLElement
 async function handleLogout() {
     await saveGameState();
     stopGame();
+    
+    // Turn off listeners to prevent errors after logout
+    db.ref('globalState').off();
+    db.ref('chatMessages').off();
+
 
     await auth.signOut();
 
     gameState = getInitialGameState();
+    userNickname = null;
 
     const mainContent = document.getElementById('main-content');
     const loginScreen = document.getElementById('login-screen');
@@ -1804,7 +2016,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCountdown();
 
     // UI 섹션 토글 이벤트 리스너 등록
-    ['assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => {
+    ['income', 'chat', 'assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => {
         const toggle = document.getElementById(`toggle-${s}`);
         if (toggle) {
             toggle.addEventListener('click', () => {
@@ -1813,6 +2025,78 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     });
+
+    // Dev Panel Setup
+    const devPanel = document.getElementById('dev-panel');
+    const weatherSelect = document.getElementById('dev-weather-select') as HTMLSelectElement;
+    if (weatherSelect) {
+        for (const weatherKey in WEATHER_DATA) {
+            const option = document.createElement('option');
+            option.value = weatherKey;
+            option.textContent = `${WEATHER_DATA[weatherKey as keyof typeof WEATHER_DATA].icon} ${weatherKey}`;
+            weatherSelect.appendChild(option);
+        }
+    }
+    
+    document.getElementById('close-dev-panel')?.addEventListener('click', () => devPanel?.classList.add('hidden'));
+    document.getElementById('dev-post-announcement-btn')?.addEventListener('click', () => {
+        const text = (document.getElementById('dev-announcement-text') as HTMLInputElement).value;
+        const duration = Number((document.getElementById('dev-announcement-duration') as HTMLInputElement).value);
+        db.ref('globalState/announcement').set({ text, duration, timestamp: Date.now() });
+    });
+    document.getElementById('dev-clear-announcement-btn')?.addEventListener('click', () => db.ref('globalState/announcement').set(null));
+    document.getElementById('dev-give-money-btn')?.addEventListener('click', () => {
+        const amount = Number((document.getElementById('dev-money-amount') as HTMLInputElement).value);
+        if (amount > 0) db.ref('globalState/events').push({ type: 'GIVE_MONEY', amount });
+    });
+    document.getElementById('dev-set-weather-btn')?.addEventListener('click', () => {
+        const weather = (document.getElementById('dev-weather-select') as HTMLSelectElement).value;
+        db.ref('globalState/weather').set(weather);
+    });
+    document.getElementById('dev-clear-weather-btn')?.addEventListener('click', () => db.ref('globalState/weather').set(null));
+    document.getElementById('dev-set-prices-btn')?.addEventListener('click', () => {
+        const prices:any = {};
+        const cubePrice = Number((document.getElementById('dev-price-cube') as HTMLInputElement).value);
+        const lunarPrice = Number((document.getElementById('dev-price-lunar') as HTMLInputElement).value);
+        const energyPrice = Number((document.getElementById('dev-price-energy') as HTMLInputElement).value);
+        const prismPrice = Number((document.getElementById('dev-price-prism') as HTMLInputElement).value);
+        if(cubePrice > 0) prices.cube = cubePrice;
+        if(lunarPrice > 0) prices.lunar = lunarPrice;
+        if(energyPrice > 0) prices.energy = energyPrice;
+        if(prismPrice > 0) prices.prism = prismPrice;
+        db.ref('globalState/priceOverrides').set(prices);
+    });
+    document.getElementById('dev-clear-prices-btn')?.addEventListener('click', () => db.ref('globalState/priceOverrides').set(null));
+    document.getElementById('dev-set-speed-btn')?.addEventListener('click', () => {
+        const speed = Number((document.getElementById('dev-speed-input') as HTMLInputElement).value);
+        db.ref('globalState/gameSpeed').set(speed);
+    });
+    document.getElementById('dev-clear-chat-btn')?.addEventListener('click', () => {
+        if(confirm('정말로 모든 채팅 기록을 삭제하시겠습니까?')) {
+            db.ref('chatMessages').remove();
+            db.ref('globalState/chatCleared').set(firebase.database.ServerValue.TIMESTAMP);
+        }
+    });
+    document.getElementById('dev-create-code-btn')?.addEventListener('click', () => {
+        const code = (document.getElementById('dev-code-id') as HTMLInputElement).value.trim().toUpperCase();
+        const type = (document.getElementById('dev-code-reward-type') as HTMLSelectElement).value;
+        const amount = Number((document.getElementById('dev-code-reward-amount') as HTMLInputElement).value);
+        if(code && type && amount > 0) {
+            db.ref('promoCodes/' + code).set({ type, amount });
+            alert(`코드 "${code}"가 생성되었습니다.`);
+        } else {
+            alert('모든 필드를 올바르게 입력해주세요.');
+        }
+    });
+    document.getElementById('dev-reset-user-btn')?.addEventListener('click', () => {
+        const uid = (document.getElementById('dev-reset-uid') as HTMLInputElement).value.trim();
+        if(uid && confirm(`정말로 UID: ${uid} 유저의 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+            db.ref('users/' + uid).remove()
+            .then(() => alert(`${uid} 유저의 데이터가 삭제되었습니다.`))
+            .catch((e) => alert(`삭제 실패: ${e.message}`));
+        }
+    });
+
 
     if (!loginScreen || !mainContent || !loginButton || !registerButton || !logoutButton || !loginForm || !registerForm || !showRegisterButton || !showLoginButton) {
         console.error("UI elements not found!");
