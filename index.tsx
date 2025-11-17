@@ -143,7 +143,6 @@ const getInitialGameState = () => ({
     hasSprinkler: false,
     seedInventory: {},
     exceptionalState: { isActive: false, expiresAt: 0 },
-    processedEvents: {},
 });
 
 gameState = getInitialGameState();
@@ -468,24 +467,24 @@ function populateShopItems() {
     ];
     items.forEach(item => {
         const el = document.createElement('div');
-        el.className = 'bg-gray-600 p-4 rounded-lg flex flex-col justify-between';
+        el.className = 'bg-gray-600 p-2 rounded-lg flex flex-col justify-between';
         
         let buttonHtml: string;
         const isBedAndOwned = item.id === 'bed' && gameState.shopItems.bed;
         const isOtherAndOwned = item.id !== 'bed' && gameState.shopItems[item.id];
 
         if (isBedAndOwned) {
-            buttonHtml = `<button id="sleep-button-shop" class="w-full bg-indigo-600 hover:bg-indigo-700 font-bold py-2 px-4 rounded-lg">수면</button>`;
+            buttonHtml = `<button id="sleep-button-shop" class="w-full bg-indigo-600 hover:bg-indigo-700 font-bold py-1 px-2 rounded-lg text-sm">수면</button>`;
         } else if (isOtherAndOwned) {
-            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-2 px-4 rounded-lg btn-disabled" disabled>보유중</button>`;
+            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-1 px-2 rounded-lg text-sm btn-disabled" disabled>보유중</button>`;
         } else {
-            buttonHtml = `<button id="buy-${item.id}" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">${item.cost.toLocaleString()} KRW</button>`;
+            buttonHtml = `<button id="buy-${item.id}" class="w-full bg-blue-600 hover:bg-blue-700 font-bold py-1 px-2 rounded-lg text-sm">${item.cost.toLocaleString()} KRW</button>`;
         }
 
         el.innerHTML = `
             <div>
-                <h4 class="font-bold text-lg">${item.name}</h4>
-                <p class="text-xs text-gray-400 mt-1 mb-3 h-10">${item.desc}</p>
+                <h4 class="font-bold text-base">${item.name}</h4>
+                <p class="text-xs text-gray-400 mt-1 mb-2 h-8">${item.desc}</p>
             </div>
             ${buttonHtml}
         `;
@@ -1378,22 +1377,22 @@ function populateFarmShop() {
         }
 
         const el = document.createElement('div');
-        el.className = 'bg-gray-600 p-4 rounded-lg flex flex-col justify-between text-center';
+        el.className = 'bg-gray-600 p-2 rounded-lg flex flex-col justify-between text-center';
 
         let buttonHtml: string;
         const isSprinklerAndOwned = itemId === 'sprinkler' && gameState.hasSprinkler;
 
         if (isSprinklerAndOwned) {
-            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-2 px-4 rounded-lg text-sm mt-2 btn-disabled" disabled>구매 완료</button>`;
+            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-1 px-2 rounded-lg text-xs mt-2 btn-disabled" disabled>구매 완료</button>`;
         } else {
-            buttonHtml = `<button id="buy-farm-item-${itemId}" class="w-full bg-green-600 hover:bg-green-700 font-bold py-2 px-4 rounded-lg text-sm mt-2">${item.cost.toLocaleString()} KRW</button>`;
+            buttonHtml = `<button id="buy-farm-item-${itemId}" class="w-full bg-green-600 hover:bg-green-700 font-bold py-1 px-2 rounded-lg text-xs mt-2">${item.cost.toLocaleString()} KRW</button>`;
         }
 
         el.innerHTML = `
              <div>
-                <div class="text-4xl mb-2">${item.icon}</div>
-                <h4 class="font-bold text-md">${item.krName} (x${item.quantity})</h4>
-                <p class="text-xs text-gray-400 mt-1 mb-3 h-12">${item.desc}</p>
+                <div class="text-3xl mb-1">${item.icon}</div>
+                <h4 class="font-bold text-sm">${item.krName} (x${item.quantity})</h4>
+                <p class="text-xs text-gray-400 mt-1 mb-2 h-10">${item.desc}</p>
             </div>
             ${buttonHtml}
         `;
@@ -1782,43 +1781,6 @@ async function onLoginSuccess(loginScreen: HTMLElement, mainContent: HTMLElement
             restartGameLoop();
         }
     });
-
-    db.ref('globalState/events').on('child_added', (snapshot) => {
-        const event = snapshot.val();
-        const eventId = snapshot.key;
-
-        // Ignore events older than 15 seconds to only affect online users
-        if (event.timestamp && Date.now() - event.timestamp > 15000) {
-            return;
-        }
-
-        if (!gameState.processedEvents) {
-            gameState.processedEvents = {};
-        }
-
-        if (eventId && !gameState.processedEvents[eventId]) {
-            let stateWasModified = false;
-            if (event.type === 'GIVE_MONEY') {
-                gameState.userCash += Number(event.amount);
-                showNotification(`관리자로부터 ${Number(event.amount).toLocaleString()} KRW를 받았습니다!`, false);
-                stateWasModified = true;
-            } else if (event.type === 'TAKE_MONEY') {
-                const amountToTake = Number(event.amount);
-                const cashBefore = gameState.userCash;
-                gameState.userCash = Math.max(0, gameState.userCash - amountToTake);
-                const actualAmountTaken = cashBefore - gameState.userCash;
-                if(actualAmountTaken > 0) {
-                    showNotification(`관리자에 의해 ${actualAmountTaken.toLocaleString()} KRW가 회수되었습니다.`, true);
-                }
-                stateWasModified = true;
-            }
-
-            gameState.processedEvents[eventId] = true;
-            if (stateWasModified) {
-                saveGameState();
-            }
-        }
-    });
     
     // Set up chat listener
     if(dom.chatMessages) dom.chatMessages.innerHTML = ''; // Clear chat on login
@@ -1964,22 +1926,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         db.ref('globalState/announcement').set({ text, duration, timestamp: Date.now() });
     });
     document.getElementById('dev-clear-announcement-btn')?.addEventListener('click', () => db.ref('globalState/announcement').set(null));
-    document.getElementById('dev-give-money-btn')?.addEventListener('click', () => {
-        const amount = Number((document.getElementById('dev-money-amount') as HTMLInputElement).value);
-        if (amount > 0) db.ref('globalState/events').push({ type: 'GIVE_MONEY', amount, timestamp: firebase.database.ServerValue.TIMESTAMP });
-    });
-    document.getElementById('dev-take-money-btn')?.addEventListener('click', () => {
-        const amountInput = document.getElementById('dev-take-money-amount') as HTMLInputElement;
-        const amount = Number(amountInput.value);
-        if (amount > 0) {
-            if (confirm(`정말로 모든 온라인 유저에게서 ${amount.toLocaleString()} KRW를 회수하시겠습니까?`)) {
-                db.ref('globalState/events').push({ type: 'TAKE_MONEY', amount, timestamp: firebase.database.ServerValue.TIMESTAMP });
-                amountInput.value = '';
-            }
-        } else {
-            alert('회수할 금액을 올바르게 입력해주세요.');
-        }
-    });
     document.getElementById('dev-set-weather-btn')?.addEventListener('click', () => {
         const weather = (document.getElementById('dev-weather-select') as HTMLSelectElement).value;
         db.ref('globalState/weather').set(weather);
