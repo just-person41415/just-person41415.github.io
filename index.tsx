@@ -69,18 +69,6 @@ const FARM_ITEM_DATA: { [key: string]: { name: string; krName: string; icon: str
     acidFertilizer: { name: '산성 비료', krName: '산성 비료', icon: '☢️', desc: '산성비일 때만 사용 가능. 6시간(게임) 동안 성장 속도 5배, 먹이 사용 불가, 판매가 2 감소.', cost: 20000, quantity: 1, requires: '산성비' },
 };
 
-const VPN_MULTIPLIERS = [0.01, 0.012, 0.014, 0.016, 0.018, 0.02];
-const getVpnMultiplier = (level: number) => VPN_MULTIPLIERS[level] || VPN_MULTIPLIERS[0];
-
-const SKILL_DATA: { [key: string]: { name: string, maxTier: number, costs: number[], description: (level: number) => string, category: 'cube' | 'farm' } } = {
-    cube_efficiency: { name: '효율성 증가', maxTier: 5, costs: [20, 100, 400, 1200, 2400], description: level => `3D 큐브 생산량 +${(level + 1) * 10}%`, category: 'cube' },
-    cube_exceptional: { name: '특출남 확률 증가', maxTier: 5, costs: [20, 80, 240, 720, 2160], description: level => `'특출남' 상태 발동 확률 계산 시 배고픔 나누기 수치 +${level + 1}`, category: 'cube' },
-    cube_vpn: { name: 'VPN', maxTier: 5, costs: [100, 1000, 5000, 15000, 30000], description: level => `오프라인(AFK) 수익 배율을 ${(getVpnMultiplier(level) * 100).toFixed(1)}%로 적용`, category: 'cube' },
-    farm_fertilizer: { name: '친환경 비료', maxTier: 5, costs: [10, 30, 90, 270, 810], description: level => `작물 성장 시간 -${(level + 1) * 5}%`, category: 'farm' },
-    farm_lucky_harvest: { name: '행운 수확', maxTier: 5, costs: [5, 25, 125, 625, 3125], description: level => `수확 시 +${(level + 1) * 5}% 확률로 작물 2개 획득`, category: 'farm' },
-    farm_expand: { name: '토지 늘리기', maxTier: 2, costs: [1000, 5000], description: level => `농장 크기를 ${3 + level + 1}x${3 + level + 1}으로 확장`, category: 'farm' },
-};
-
 let gameLoopInterval: any = null;
 let miningInterval: any = null;
 // FIX: Changed timer handle types to 'any' to support both browser (number) and Node.js (Timeout) return types from setTimeout.
@@ -154,10 +142,6 @@ const getInitialGameState = () => ({
     farmBuffs: {},
     hasSprinkler: false,
     seedInventory: {},
-    skills: {
-        cube_efficiency: 0, cube_exceptional: 0, cube_vpn: 0,
-        farm_fertilizer: 0, farm_lucky_harvest: 0, farm_expand: 0,
-    },
     exceptionalState: { isActive: false, expiresAt: 0 },
     processedEvents: {},
 });
@@ -277,7 +261,6 @@ function initGame() {
         trophyList: document.getElementById('trophy-list'),
         transactionHistoryList: document.getElementById('transaction-history-list'),
         farmPlotSection: document.getElementById('farm-plot-section'), seedShopContainer: document.getElementById('seed-shop-container'), inventoryContainer: document.getElementById('inventory-container'),
-        skillsCubeContainer: document.getElementById('skills-cube-container'), skillsFarmContainer: document.getElementById('skills-farm-container'),
         chatMessages: document.getElementById('chat-messages'),
         chatInput: document.getElementById('chat-input'),
         chatSendButton: document.getElementById('chat-send-button'),
@@ -300,7 +283,6 @@ function initGame() {
     initCharts();
     init3D();
     updateFarmUI();
-    updateSkillsUI();
 }
 
 function restartGameLoop() {
@@ -404,8 +386,6 @@ function updateUI() {
         if (state.isPrismUpgraded) baseProduction = 400;
         else if (state.isEnergyUpgraded) baseProduction = 200;
     }
-    // 스킬 효과 적용
-    baseProduction *= (1 + state.skills.cube_efficiency * 0.1);
     
     const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
@@ -859,7 +839,6 @@ function gameLoop() {
     // Income
     let baseProduction = 0;
     if(state.isCubePurchased) { baseProduction = 100; if(state.isPrismUpgraded) baseProduction = 400; else if(state.isEnergyUpgraded) baseProduction = 200; }
-    baseProduction *= (1 + state.skills.cube_efficiency * 0.1);
 
     const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
     const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
@@ -1022,7 +1001,7 @@ function handleSleep() {
         const lunarBonus = (state.isLunarUpgraded) ? 100 : 0; // Avg over day/night
         let totalIncomePerSecond = (baseProduction + lunarBonus) / 4;
 
-        const vpnMultiplier = getVpnMultiplier(state.skills.cube_vpn);
+        const vpnMultiplier = 0.01; // Base VPN multiplier
         state.userCash += totalIncomePerSecond * secondsSlept * vpnMultiplier;
         
         // Mining during sleep
@@ -1063,7 +1042,6 @@ function restoreUIState() {
 
     updateWeatherAlmanacUI();
     updateFarmUI();
-    updateSkillsUI();
     updateUI();
 }
 
@@ -1080,7 +1058,7 @@ function updateFarmPlots() {
     if (!container) return;
     container.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">내 농장</h3>`;
 
-    const farmSize = 3 + gameState.skills.farm_expand;
+    const farmSize = 3;
     const grid = document.createElement('div');
     grid.className = `grid gap-2`;
     grid.style.gridTemplateColumns = `repeat(${farmSize}, minmax(0, 1fr))`;
@@ -1296,7 +1274,7 @@ function handlePlant(plotIndex: number) {
 
     const seedId = selectedSeed;
     const seedData = CROP_DATA[seedId];
-    const fertilizerDiscount = 1 - (gameState.skills.farm_fertilizer * 0.05);
+    const fertilizerDiscount = 1;
     
     let fertilizerType = null;
     if (gameState.farmBuffs.artificialFertilizer) fertilizerType = 'artificial';
@@ -1321,7 +1299,7 @@ function handleHarvest(plotIndex: number) {
     if (!plot || !plot.isGrown) return;
 
     let harvestCount = 1;
-    const luckyHarvestChance = gameState.skills.farm_lucky_harvest * 0.05;
+    const luckyHarvestChance = 0;
     if (Math.random() < luckyHarvestChance) {
         harvestCount = 2;
         showNotification('행운의 수확! 작물을 2개 획득했습니다!', false);
@@ -1364,7 +1342,7 @@ function handleFeedCube(cropId: string, variant: string) {
         gameState.inventory[inventoryKey]--;
         const crop = CROP_DATA[cropId];
         const hg = crop.sellPrice / 10;
-        const chanceDivisor = 10 - gameState.skills.cube_exceptional;
+        const chanceDivisor = 10;
         const activationChance = (hg / chanceDivisor) / 100;
         
         if (Math.random() < activationChance) {
@@ -1381,90 +1359,6 @@ function handleFeedCube(cropId: string, variant: string) {
         updateUI();
         saveGameState();
     }
-}
-
-// =======================================================
-// 스킬 트리 관련 로직
-// =======================================================
-function updateSkillsUI() {
-    const cubeContainer = dom.skillsCubeContainer;
-    const farmContainer = dom.skillsFarmContainer;
-    if (!cubeContainer || !farmContainer) return;
-    
-    cubeContainer.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">3D 큐브 스킬</h3><div class="space-y-3"></div>`;
-    farmContainer.innerHTML = `<h3 class="text-lg font-semibold text-white mb-2">농사 스킬</h3><div class="space-y-3"></div>`;
-    
-    const cubeList = cubeContainer.querySelector('div');
-    const farmList = farmContainer.querySelector('div');
-
-    for (const skillId in SKILL_DATA) {
-        const skill = SKILL_DATA[skillId as keyof typeof SKILL_DATA];
-        const currentLevel = gameState.skills[skillId];
-        
-        const el = document.createElement('div');
-        el.className = 'bg-gray-600 p-3 rounded-lg';
-
-        let buttonHtml: string;
-        if (currentLevel >= skill.maxTier) {
-            buttonHtml = `<button class="w-full bg-gray-500 font-bold py-2 px-4 rounded-lg text-sm btn-disabled" disabled>마스터</button>`;
-        } else {
-            const cost = skill.costs[currentLevel];
-            buttonHtml = `<button id="buy-skill-${skillId}" class="w-full bg-purple-600 hover:bg-purple-700 font-bold py-2 px-4 rounded-lg text-sm">${cost.toLocaleString()} TK</button>`;
-        }
-        
-        const currentDesc = skillId === 'farm_expand' ? `현재 크기: ${3 + currentLevel}x${3 + currentLevel}` : `현재: ${skill.description(currentLevel)}`;
-        const nextDesc = currentLevel < skill.maxTier ? `다음: ${skill.description(currentLevel + 1)}` : '최대 레벨';
-
-        el.innerHTML = `
-            <div class="flex justify-between items-center mb-2">
-                <h4 class="font-bold text-base">${skill.name}</h4>
-                <p class="text-sm text-gray-300">Lv. ${currentLevel} / ${skill.maxTier}</p>
-            </div>
-            <p class="text-xs text-gray-400 mb-3 h-8">${currentDesc}<br>${nextDesc}</p>
-            ${buttonHtml}
-        `;
-
-        if (skill.category === 'cube') {
-            cubeList?.appendChild(el);
-        } else {
-            farmList?.appendChild(el);
-        }
-
-        if (currentLevel < skill.maxTier) {
-            document.getElementById(`buy-skill-${skillId}`)?.addEventListener('click', () => handleBuySkill(skillId));
-        }
-    }
-}
-function handleBuySkill(skillId: string) {
-    const skill = SKILL_DATA[skillId as keyof typeof SKILL_DATA];
-    const currentLevel = gameState.skills[skillId];
-    if (currentLevel >= skill.maxTier) return;
-
-    const cost = skill.costs[currentLevel];
-    if (gameState.farmCoin < cost) {
-        showNotification('농장 코인이 부족합니다.', true);
-        return;
-    }
-
-    gameState.farmCoin -= cost;
-    gameState.skills[skillId]++;
-    
-    if (skillId === 'farm_expand') {
-        const oldSize = (3 + currentLevel) * (3 + currentLevel);
-        const newSize = (3 + gameState.skills.farm_expand) * (3 + gameState.skills.farm_expand);
-        const newPlots = Array(newSize).fill(null);
-        // 기존 작물 데이터 보존
-        for(let i=0; i<oldSize; i++) {
-            newPlots[i] = gameState.farmPlots[i];
-        }
-        gameState.farmPlots = newPlots;
-        updateFarmUI();
-    }
-    
-    showNotification(`${skill.name} 스킬 레벨 업!`, false);
-    updateSkillsUI();
-    updateUI();
-    saveGameState();
 }
 
 
@@ -1642,7 +1536,13 @@ function migrateAndMergeState(loadedData: any): any {
             const initialValue = initialState[key as keyof typeof initialState];
             const loadedValue = loadedData[key];
 
-            if (loadedValue !== undefined) {
+            if (key === 'farmPlots' && loadedValue && Array.isArray(loadedValue)) {
+                // If the saved farm is larger than 3x3 (9 plots), truncate it.
+                if (loadedValue.length > 9) {
+                    loadedValue.length = 9;
+                }
+                migratedState[key] = loadedValue;
+            } else if (loadedValue !== undefined) {
                  // Special handling for nested plain objects to merge them
                 if (
                     typeof initialValue === 'object' && initialValue !== null && !Array.isArray(initialValue) &&
@@ -1697,10 +1597,9 @@ async function loadGameState() {
                         let avgBaseProd = 100;
                         if (gameState.isPrismUpgraded) avgBaseProd = 400;
                         else if (gameState.isEnergyUpgraded) avgBaseProd = 200;
-                        avgBaseProd *= (1 + gameState.skills.cube_efficiency * 0.1);
 
                         const avgLunarBonus = gameState.isLunarUpgraded ? (100 * (14 / 24)) : 0; // Average lunar bonus
-                        const vpnMultiplier = getVpnMultiplier(gameState.skills.cube_vpn);
+                        const vpnMultiplier = 0.01; // Base VPN multiplier
                         offlineCash = (offlineSeconds / 4) * (avgBaseProd + avgLunarBonus) * vpnMultiplier;
                     }
                     
@@ -1888,6 +1787,11 @@ async function onLoginSuccess(loginScreen: HTMLElement, mainContent: HTMLElement
         const event = snapshot.val();
         const eventId = snapshot.key;
 
+        // Ignore events older than 15 seconds to only affect online users
+        if (event.timestamp && Date.now() - event.timestamp > 15000) {
+            return;
+        }
+
         if (!gameState.processedEvents) {
             gameState.processedEvents = {};
         }
@@ -2031,7 +1935,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCountdown();
 
     // UI 섹션 토글 이벤트 리스너 등록
-    ['income', 'chat', 'assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => {
+    ['assets', 'farm', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => {
         const toggle = document.getElementById(`toggle-${s}`);
         if (toggle) {
             toggle.addEventListener('click', () => {
@@ -2062,14 +1966,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('dev-clear-announcement-btn')?.addEventListener('click', () => db.ref('globalState/announcement').set(null));
     document.getElementById('dev-give-money-btn')?.addEventListener('click', () => {
         const amount = Number((document.getElementById('dev-money-amount') as HTMLInputElement).value);
-        if (amount > 0) db.ref('globalState/events').push({ type: 'GIVE_MONEY', amount });
+        if (amount > 0) db.ref('globalState/events').push({ type: 'GIVE_MONEY', amount, timestamp: firebase.database.ServerValue.TIMESTAMP });
     });
     document.getElementById('dev-take-money-btn')?.addEventListener('click', () => {
         const amountInput = document.getElementById('dev-take-money-amount') as HTMLInputElement;
         const amount = Number(amountInput.value);
         if (amount > 0) {
-            if (confirm(`정말로 모든 유저에게서 ${amount.toLocaleString()} KRW를 회수하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
-                db.ref('globalState/events').push({ type: 'TAKE_MONEY', amount });
+            if (confirm(`정말로 모든 온라인 유저에게서 ${amount.toLocaleString()} KRW를 회수하시겠습니까?`)) {
+                db.ref('globalState/events').push({ type: 'TAKE_MONEY', amount, timestamp: firebase.database.ServerValue.TIMESTAMP });
                 amountInput.value = '';
             }
         } else {
