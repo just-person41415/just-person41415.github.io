@@ -1,39 +1,30 @@
-// --- Firebase Imports ---
-import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, push, serverTimestamp, query, limitToLast, DataSnapshot, set, update } from 'firebase/database';
-
 // FIX: Add declarations for global variables and extend Window interface to avoid TypeScript errors.
 declare var Chart: any;
 declare var THREE: any;
+declare var firebase: any;
 
 declare global {
     interface Window {
         Chart: any;
-        // FIX: Changed to `any` to handle different return types of `setInterval` (number in browser, Timeout in Node.js).
+        // FIX: Changed timer handle type to 'any' to support both browser (number) and Node.js (Timeout) return types from setInterval.
         autosaveInterval?: any;
     }
 }
 
-// --- Firebase 설정 (본인의 설정으로 교체해야 합니다) ---
+// --- Firebase 설정 ---
 const firebaseConfig = {
-  apiKey: "AIzaSyAMkZ-JoMxZEc2mXbIlZfhf_bVr-wLSHjo",
-  authDomain: "cube-coin-simulator.firebaseapp.com",
-  databaseURL: "https://cube-coin-simulator-default-rtdb.firebaseio.com",
-  projectId: "cube-coin-simulator",
-  storageBucket: "cube-coin-simulator.appspot.com",
-  messagingSenderId: "734525632764",
-  appId: "1:734525632764:web:ba9263fefeeca5726b6779"
+  apiKey: "AIzaSyB5bYYQ7sIPOy1hjhKz0gqWIk28PK-ma9E",
+  authDomain: "real-d1d0a.firebaseapp.com",
+  databaseURL: "https://real-d1d0a-default-rtdb.firebaseio.com",
+  projectId: "real-d1d0a",
+  storageBucket: "real-d1d0a.appspot.com",
+  messagingSenderId: "362480200866",
+  appId: "1:362480200866:web:ae6e59d94a9e3fef51fbfb",
+  measurementId: "G-Q40RNTCZW5"
 };
-
-// Firebase 앱 초기화
-let database: any;
-try {
-    const app = initializeApp(firebaseConfig);
-    database = getDatabase(app);
-} catch (e) {
-    console.error("Firebase 초기화 오류. firebaseConfig를 올바르게 설정했는지 확인하세요.", e);
-}
-let nickname: string | null = null;
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
 
 
 // --- 전역 설정 ---
@@ -90,15 +81,17 @@ const SKILL_DATA: { [key: string]: { name: string, maxTier: number, costs: numbe
     farm_expand: { name: '토지 늘리기', maxTier: 2, costs: [1000, 5000], description: level => `농장 크기를 ${3 + level + 1}x${3 + level + 1}으로 확장`, category: 'farm' },
 };
 
-// FIX: Changed timer variable types from `number` to `any` to avoid type conflicts between browser `number` and Node `Timeout` types.
-let gameLoopInterval: any | null = null;
-let miningInterval: any | null = null;
+let gameLoopInterval: any = null;
+let miningInterval: any = null;
+// FIX: Changed timer handle types to 'any' to support both browser (number) and Node.js (Timeout) return types from setTimeout.
+let priceUpdateTimeoutCube: any = null;
+let priceUpdateTimeoutLunar: any = null;
+let priceUpdateTimeoutEnergy: any = null;
+let priceUpdateTimeoutPrism: any = null;
 let gameTime: Date;
 // FIX: Changed to `any` to allow dynamic property assignment and avoid type errors.
 let dom: any = {};
 let selectedSeed: string | null = null;
-let isDevMode = false;
-let resetConfirmationStep = 0;
 
 // --- 3D 렌더링 관련 ---
 let scene: any, camera: any, renderer: any, cube: any;
@@ -123,16 +116,20 @@ const getInitialGameState = () => ({
     lastEnergyPrice: 50000,
     currentPrismPrice: 100000,
     lastPrismPrice: 100000,
-    weather: '맑음',
-    experiencedWeathers: { '맑음': true },
+    fluctuation: { cube: '중', lunar: '중', energy: '중', prism: '중' },
     computerTier: 0,
     isCubePurchased: false,
     isLunarUpgraded: false,
     isEnergyUpgraded: false,
     isPrismUpgraded: false,
+    weather: '맑음',
+    weatherCounter: 0,
+    experiencedWeathers: { '맑음': true },
     shopItems: { digitalClock: false, weatherAlmanac: false, bed: false },
     isInternetOutage: false,
     isInternetOutageCooldown: 0,
+    nextWeatherIsCloudy: false,
+    nextWeatherIsRainbow: false,
     gameTime: new Date(2025, 10, 22, 9, 0, 0).getTime(),
     isSleeping: false,
     usedCodes: [],
@@ -247,14 +244,6 @@ function updateChartData(chart: any, price: number, time: string) {
 function initGame() {
     // DOM queries that are part of the main game UI
     dom = {
-        // Main Content
-        mainContent: document.getElementById('main-content'),
-        // Login Screen
-        loginScreen: document.getElementById('login-screen'),
-        nicknameInputLogin: document.getElementById('nickname-input-login') as HTMLInputElement,
-        nicknameSubmitLogin: document.getElementById('nickname-submit-login'),
-
-        // Game UI
         userCash: document.getElementById('user-cash'), userCubes: document.getElementById('user-cubes'), userLunar: document.getElementById('user-lunar'), userEnergy: document.getElementById('user-energy'), userPrisms: document.getElementById('user-prisms'), userFarmCoin: document.getElementById('user-farm-coin'),
         currentCubePrice: document.getElementById('current-cube-price'), cubePriceChange: document.getElementById('cube-price-change'),
         currentLunarPrice: document.getElementById('current-lunar-price'), lunarPriceChange: document.getElementById('lunar-price-change'),
@@ -279,31 +268,8 @@ function initGame() {
         transactionHistoryList: document.getElementById('transaction-history-list'),
         farmPlotSection: document.getElementById('farm-plot-section'), seedShopContainer: document.getElementById('seed-shop-container'), inventoryContainer: document.getElementById('inventory-container'),
         skillsCubeContainer: document.getElementById('skills-cube-container'), skillsFarmContainer: document.getElementById('skills-farm-container'),
-        // Chat elements
-        chatPanel: document.getElementById('chat-panel'),
-        toggleChatPanel: document.getElementById('toggle-chat-panel'),
-        openChatButton: document.getElementById('open-chat-button'),
-        chatInterface: document.getElementById('chat-interface'),
-        chatLog: document.getElementById('chat-log'),
-        chatForm: document.getElementById('chat-form'),
-        chatInput: document.getElementById('chat-input') as HTMLInputElement,
-        // Dev Panel Elements
-        devPanel: document.getElementById('dev-panel'),
-        devWeatherSelect: document.getElementById('dev-weather-select') as HTMLSelectElement,
-        devWeatherApply: document.getElementById('dev-weather-apply'),
-        devAnnouncementInput: document.getElementById('dev-announcement-input') as HTMLInputElement,
-        devAnnouncementSend: document.getElementById('dev-announcement-send'),
-        devPriceCubeInput: document.getElementById('dev-price-cube-input') as HTMLInputElement,
-        devPriceCubeApply: document.getElementById('dev-price-cube-apply'),
-        devPriceLunarInput: document.getElementById('dev-price-lunar-input') as HTMLInputElement,
-        devPriceLunarApply: document.getElementById('dev-price-lunar-apply'),
-        devPriceEnergyInput: document.getElementById('dev-price-energy-input') as HTMLInputElement,
-        devPriceEnergyApply: document.getElementById('dev-price-energy-apply'),
-        devPricePrismInput: document.getElementById('dev-price-prism-input') as HTMLInputElement,
-        devPricePrismApply: document.getElementById('dev-price-prism-apply'),
-        devResetData: document.getElementById('dev-reset-data'),
     };
-    ['assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => { const toggle = document.getElementById(`toggle-${s}`); if (toggle) { toggle.addEventListener('click', () => { document.getElementById(`content-${s}`)?.classList.toggle('hidden'); document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180'); }); } });
+    
     if (dom.buyCubeButton) dom.buyCubeButton.addEventListener('click', handleBuy3DCube);
     if (dom.computerUpgradeButton) dom.computerUpgradeButton.addEventListener('click', handleComputerUpgrade);
     if (dom.codeSubmitButton) dom.codeSubmitButton.addEventListener('click', handleCodeSubmit);
@@ -311,41 +277,23 @@ function initGame() {
     if (dom.upgradeEnergyButton) dom.upgradeEnergyButton.addEventListener('click', handleUpgradeEnergy);
     if (dom.upgradePrismButton) dom.upgradePrismButton.addEventListener('click', handleUpgradePrism);
     ['cube', 'lunar', 'energy', 'prism'].forEach(c => dom[`chartTab${c.charAt(0).toUpperCase() + c.slice(1)}`]?.addEventListener('click', () => switchChart(c)));
-    if (dom.chatForm) dom.chatForm.addEventListener('submit', handleSendMessage);
-    if (dom.toggleChatPanel) dom.toggleChatPanel.addEventListener('click', toggleChatPanelVisibility);
-    if (dom.openChatButton) dom.openChatButton.addEventListener('click', toggleChatPanelVisibility);
-
-    // Dev Panel Listeners
-    if (dom.devWeatherApply) dom.devWeatherApply.addEventListener('click', handleDevWeather);
-    if (dom.devAnnouncementSend) dom.devAnnouncementSend.addEventListener('click', handleDevAnnouncement);
-    if (dom.devPriceCubeApply) dom.devPriceCubeApply.addEventListener('click', () => handleDevPrice('cube'));
-    if (dom.devPriceLunarApply) dom.devPriceLunarApply.addEventListener('click', () => handleDevPrice('lunar'));
-    if (dom.devPriceEnergyApply) dom.devPriceEnergyApply.addEventListener('click', () => handleDevPrice('energy'));
-    if (dom.devPricePrismApply) dom.devPricePrismApply.addEventListener('click', () => handleDevPrice('prism'));
-    if (dom.devResetData) dom.devResetData.addEventListener('click', handleDevResetData);
-
+    
     populateTradeUI();
     populateShopItems();
     populateFarmShop();
-    populateDevPanel();
     initCharts();
     init3D();
-    initChat();
     updateFarmUI();
     updateSkillsUI();
-    loadChatPanelVisibility();
-}
-
-async function initializeMainApp() {
-    initGame();
-    await loadGameState();
-    initGlobalStateListener();
-    startGame();
 }
 
 function startGame() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
     if (miningInterval) clearInterval(miningInterval);
+    if (priceUpdateTimeoutCube) clearTimeout(priceUpdateTimeoutCube);
+    if (priceUpdateTimeoutLunar) clearTimeout(priceUpdateTimeoutLunar);
+    if (priceUpdateTimeoutEnergy) clearTimeout(priceUpdateTimeoutEnergy);
+    if (priceUpdateTimeoutPrism) clearTimeout(priceUpdateTimeoutPrism);
     
     gameTime = new Date(gameState.gameTime);
     restoreUIState();
@@ -353,16 +301,34 @@ function startGame() {
     updateTransactionHistoryUI();
     gameLoopInterval = setInterval(gameLoop, 250);
     miningInterval = setInterval(handleMining, 60000); // 1분마다 채굴
+    startPriceUpdateLoops();
     animate();
+}
+
+function stopGame() {
+    if (gameLoopInterval) clearInterval(gameLoopInterval);
+    if (miningInterval) clearInterval(miningInterval);
+    if (priceUpdateTimeoutCube) clearTimeout(priceUpdateTimeoutCube);
+    if (priceUpdateTimeoutLunar) clearTimeout(priceUpdateTimeoutLunar);
+    if (priceUpdateTimeoutEnergy) clearTimeout(priceUpdateTimeoutEnergy);
+    if (priceUpdateTimeoutPrism) clearTimeout(priceUpdateTimeoutPrism);
+    if (window.autosaveInterval) clearInterval(window.autosaveInterval);
+    gameLoopInterval = null;
+    miningInterval = null;
+    priceUpdateTimeoutCube = null;
+    priceUpdateTimeoutLunar = null;
+    priceUpdateTimeoutEnergy = null;
+    priceUpdateTimeoutPrism = null;
+    window.autosaveInterval = null;
 }
 
 function showNotification(message: string, isError = true) {
     if (!dom.notification) return;
     dom.notification.textContent = message;
-    dom.notification.className = `fixed top-6 left-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`;
+    dom.notification.className = `fixed bottom-6 right-6 text-white p-4 rounded-lg shadow-xl z-50 ${isError ? 'bg-red-500' : 'bg-green-500'} opacity-100 translate-y-0 transition-all duration-300`;
     setTimeout(() => {
-        dom.notification.classList.add('opacity-0', '-translate-y-10');
-    }, 1000);
+        dom.notification.classList.add('opacity-0', 'translate-y-10');
+    }, 3000);
 }
 
 function updateUI() {
@@ -595,66 +561,152 @@ function checkTrophies() {
     }
 }
 
-// =======================================================
-// 전역 상태 (날씨, 시세) 리스너
-// =======================================================
-function initGlobalStateListener() {
-    if (!database) return;
-    const globalStateRef = ref(database, 'globalState');
+function getNewPrice(currentPrice: number, coinId: string) {
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+    
+    let riseProb = 0.5;
+    let magProbs = { s: 0.60, m: 0.35, l: 0.05 }; // Default (CUBE)
 
-    onValue(globalStateRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            // 날씨 업데이트
-            if (data.weather && gameState.weather !== data.weather) {
-                gameState.weather = data.weather;
-                gameState.experiencedWeathers[data.weather] = true;
-                checkTrophies();
-                updateWeatherAlmanacUI();
-                populateFarmShop();
+    // Coin-specific rules
+    switch(coinId) {
+        case 'cube':
+            riseProb = 0.55;
+            magProbs = { s: 0.60, m: 0.35, l: 0.05 };
+            break;
+        case 'lunar':
+            if (isNight) {
+                riseProb = 0.55;
+                magProbs = { s: 0.30, m: 0.40, l: 0.30 };
+            } else {
+                riseProb = 0.48;
+                magProbs = { s: 0.35, m: 0.55, l: 0.10 };
             }
-
-            // 코인 가격 업데이트
-            const prices = {
-                cube: { current: 'currentPrice', last: 'lastPrice' },
-                lunar: { current: 'currentLunarPrice', last: 'lastLunarPrice' },
-                energy: { current: 'currentEnergyPrice', last: 'lastEnergyPrice' },
-                prism: { current: 'currentPrismPrice', last: 'lastPrismPrice' },
-            };
-
-            for (const coin in prices) {
-                const priceKey = `price_${coin}`;
-                if (data[priceKey] && data[priceKey] !== gameState[prices[coin as keyof typeof prices].current]) {
-                    gameState[prices[coin as keyof typeof prices].last] = gameState[prices[coin as keyof typeof prices].current];
-                    gameState[prices[coin as keyof typeof prices].current] = data[priceKey];
-                }
+            break;
+        case 'energy':
+            if (isNight) {
+                riseProb = 0.50;
+            } else {
+                riseProb = 0.55;
             }
+            magProbs = { s: 0.60, m: 0.39, l: 0.01 };
+            break;
+        case 'prism':
+            riseProb = 0.51;
+            magProbs = { s: 0.45, m: 0.50, l: 0.05 };
+            break;
+    }
 
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR');
-            updateChartData(chartCube, gameState.currentPrice, timeString);
-            updateChartData(chartLunar, gameState.currentLunarPrice, timeString);
-            updateChartData(chartEnergy, gameState.currentEnergyPrice, timeString);
-            updateChartData(chartPrism, gameState.currentPrismPrice, timeString);
+    // Weather effects
+    const weather = gameState.weather;
+    switch(weather) {
+        case '맑음': riseProb += 0.005; break;
+        case '비': if (coinId === 'cube') riseProb += 0.01; break;
+        case '산성비': riseProb -= 0.025; break;
+        case '무지개': riseProb += 0.025; break;
+    }
+    
+    const dir = Math.random() < riseProb ? 1 : -1;
 
-            updateUI();
-        } else {
-            // 만약 globalState가 없다면 초기화
-            initializeGlobalState();
-        }
-    });
+    // Magnitude and Percentage
+    const magRand = Math.random();
+    let pct: number;
+    let magStr: string;
+    
+    // 소 0.1~1% / 중 1~3% / 대 3~5%
+    if (magRand < magProbs.s) {
+        pct = (Math.random() * 0.009) + 0.001; // 0.1% to 1%
+        magStr = '소';
+    } else if (magRand < magProbs.s + magProbs.m) {
+        pct = (Math.random() * 0.02) + 0.01; // 1% to 3%
+        magStr = '중';
+    } else {
+        pct = (Math.random() * 0.02) + 0.03; // 3% to 5%
+        magStr = '대';
+    }
+    
+    const newPrice = currentPrice + (currentPrice * pct * dir);
+
+    // Min/Max limits
+    const limits: { [key: string]: { min: number, max: number } } = {
+        cube: { min: 5000, max: 25000 },
+        lunar: { min: 10000, max: 50000 },
+        energy: { min: 20000, max: 100000 },
+        prism: { min: 40000, max: 200000 }
+    };
+    
+    const finalPrice = Math.round(Math.max(limits[coinId].min, Math.min(limits[coinId].max, newPrice)));
+    return { price: finalPrice, magnitude: magStr };
 }
 
-function initializeGlobalState() {
-    if (!database) return;
-    const globalStateRef = ref(database, 'globalState');
-    set(globalStateRef, {
-        weather: '맑음',
-        price_cube: 10000,
-        price_lunar: 20000,
-        price_energy: 50000,
-        price_prism: 100000,
-    });
+function startPriceUpdateLoops() {
+    priceUpdateLoopCube();
+    priceUpdateLoopLunar();
+    priceUpdateLoopEnergy();
+    priceUpdateLoopPrism();
+}
+
+function priceUpdateLoopCube() {
+    if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutCube = setTimeout(priceUpdateLoopCube, 2000);
+        return;
+    }
+    const state = gameState;
+    state.lastPrice = state.currentPrice;
+    const result = getNewPrice(state.currentPrice, 'cube');
+    state.currentPrice = result.price;
+    state.fluctuation['cube'] = result.magnitude;
+    updateChartData(chartCube, state.currentPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    priceUpdateTimeoutCube = setTimeout(priceUpdateLoopCube, 2000);
+}
+
+function priceUpdateLoopLunar() {
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+    const interval = isNight ? 1500 : 4000;
+    if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutLunar = setTimeout(priceUpdateLoopLunar, interval);
+        return;
+    }
+    const state = gameState;
+    state.lastLunarPrice = state.currentLunarPrice;
+    const result = getNewPrice(state.currentLunarPrice, 'lunar');
+    state.currentLunarPrice = result.price;
+    state.fluctuation['lunar'] = result.magnitude;
+    updateChartData(chartLunar, state.currentLunarPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+    
+    priceUpdateTimeoutLunar = setTimeout(priceUpdateLoopLunar, interval);
+}
+
+function priceUpdateLoopEnergy() {
+    const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+    const interval = isNight ? 3000 : 2000;
+     if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutEnergy = setTimeout(priceUpdateLoopEnergy, interval);
+        return;
+    }
+    const state = gameState;
+    state.lastEnergyPrice = state.currentEnergyPrice;
+    const result = getNewPrice(state.currentEnergyPrice, 'energy');
+    state.currentEnergyPrice = result.price;
+    state.fluctuation['energy'] = result.magnitude;
+    updateChartData(chartEnergy, state.currentEnergyPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    priceUpdateTimeoutEnergy = setTimeout(priceUpdateLoopEnergy, interval);
+}
+
+function priceUpdateLoopPrism() {
+    if (gameState.isInternetOutage || gameState.isSleeping) {
+        priceUpdateTimeoutPrism = setTimeout(priceUpdateLoopPrism, 3000);
+        return;
+    }
+    const state = gameState;
+    state.lastPrismPrice = state.currentPrismPrice;
+    const result = getNewPrice(state.currentPrismPrice, 'prism');
+    state.currentPrismPrice = result.price;
+    state.fluctuation['prism'] = result.magnitude;
+    updateChartData(chartPrism, state.currentPrismPrice, new Date(gameTime).toLocaleTimeString('ko-KR'));
+
+    priceUpdateTimeoutPrism = setTimeout(priceUpdateLoopPrism, 3000);
 }
 
 function gameLoop() {
@@ -665,15 +717,53 @@ function gameLoop() {
 
     gameTime.setMinutes(gameTime.getMinutes() + 1);
 
-    // Weather change logic is now handled by Firebase listener.
-    // Client-side weather changing logic removed.
+    // Weather
+    state.weatherCounter++;
+    if (state.weatherCounter >= 120) { // 30초마다 날씨 변경 (250ms * 120)
+        state.weatherCounter = 0;
+        let newWeather = '맑음';
 
-    // Internet Outage (still client-side for individual effect)
-    if (state.weather === '천둥' && Math.random() < 0.001) { // 확률 조정
-        state.isInternetOutage = true;
-        state.isInternetOutageCooldown = Date.now() + 30000; // 30 seconds
-        showNotification('천둥 번개로 인해 인터넷 연결이 끊겼습니다!', true);
+        if (state.nextWeatherIsRainbow) {
+            newWeather = '무지개';
+            state.nextWeatherIsRainbow = false;
+        } else if (state.nextWeatherIsCloudy) {
+            newWeather = '구름';
+            state.nextWeatherIsCloudy = false;
+        } else {
+            let baseProbSunny = 0.6;
+            let baseProbRain = 0.3; // total 0.9 for sunny+rain
+
+            if (state.hasWeatherTrophy) {
+                // 좋은 날씨 (맑음, 비, 무지개) 확률 2.5% 증가
+                 baseProbSunny += 0.015;
+                 baseProbRain += 0.010;
+            }
+            const rand = Math.random();
+            if (rand < baseProbSunny) {
+                newWeather = '맑음';
+            } else if (rand < baseProbSunny + baseProbRain) {
+                newWeather = '비';
+                if (Math.random() < 0.1) { newWeather = '산성비'; }
+                state.nextWeatherIsCloudy = true;
+                if (newWeather === '비' && Math.random() < 0.1) { state.nextWeatherIsRainbow = true; }
+            } else {
+                newWeather = '천둥';
+            }
+        }
+        state.weather = newWeather;
+        populateFarmShop(); // 날씨가 바뀌면 상점 다시 그림 (산성비료)
+
+        if (state.weather === '천둥' && Math.random() < 0.05) {
+            state.isInternetOutage = true;
+            state.isInternetOutageCooldown = Date.now() + 30000; // 30 seconds
+            showNotification('천둥 번개로 인해 인터넷 연결이 끊겼습니다!', true);
+        }
+        
+        state.experiencedWeathers[state.weather] = true;
+        checkTrophies();
+        updateWeatherAlmanacUI();
     }
+    // Internet Outage
     if (state.isInternetOutage && now > state.isInternetOutageCooldown) {
          state.isInternetOutage = false; 
          showNotification('인터넷 연결이 복구되었습니다.', false);
@@ -740,221 +830,6 @@ function gameLoop() {
     updateUI();
 }
 
-// =======================================================
-// 채팅 및 개발자 모드 관련 로직
-// =======================================================
-function initChat() {
-    if (!database) {
-        console.error("Database is not initialized. Chat will be disabled.");
-        if(dom.chatInterface) dom.chatInterface.innerHTML = '<p class="text-red-400 text-center">채팅 서버에 연결할 수 없습니다. Firebase 설정을 확인하세요.</p>';
-        return;
-    }
-
-    const messagesRef = query(ref(database, 'messages'), limitToLast(50));
-    onValue(messagesRef, (snapshot: DataSnapshot) => {
-        const messages = snapshot.val();
-        if (dom.chatLog) dom.chatLog.innerHTML = ''; // Clear chat
-        if (messages) {
-            Object.values(messages).forEach((msg: any) => {
-                const messageEl = document.createElement('div');
-                messageEl.classList.add('text-sm', 'break-words');
-
-                const time = new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-
-                if (msg.nickname === '[SYSTEM]') {
-                    messageEl.innerHTML = `<p class="text-yellow-300"><span class="text-gray-400 text-xs mr-2">[${time}]</span> ${msg.text}</p>`;
-                } else if (msg.nickname === '[공지]') {
-                     messageEl.innerHTML = `<p class="p-2 bg-red-800 rounded-md border border-red-600"><span class="text-gray-300 text-xs mr-2">[${time}]</span><span class="font-bold text-red-300">${msg.nickname}</span>: ${msg.text}</p>`;
-                } else {
-                     messageEl.innerHTML = `<p><span class="text-gray-400 text-xs mr-2">[${time}]</span><span class="font-semibold text-cyan-300">${msg.nickname}</span>: ${msg.text}</p>`;
-                }
-                dom.chatLog?.appendChild(messageEl);
-            });
-            dom.chatLog.scrollTop = dom.chatLog.scrollHeight; // Scroll to bottom
-        }
-    });
-}
-
-function handleSetNickname() {
-    const newNickname = dom.nicknameInputLogin?.value.trim();
-    if (newNickname && newNickname.length > 1 && newNickname.length <= 15) {
-        nickname = newNickname;
-        dom.loginScreen?.classList.add('hidden');
-        dom.mainContent?.classList.remove('hidden');
-        dom.mainContent?.classList.add('flex');
-        
-        initializeMainApp();
-
-        showNotification(`'${nickname}'님 환영합니다!`, false);
-    } else {
-        showNotification('닉네임은 2자 이상 15자 이하로 입력해주세요.', true);
-    }
-}
-
-function handleSendMessage(e: Event) {
-    e.preventDefault();
-    if (!database) return;
-    const messageText = dom.chatInput?.value.trim();
-    if (!messageText) return;
-
-    // 개발자 모드 명령어 확인
-    if (messageText.toLowerCase() === '/dev.mod') {
-        toggleDevMode();
-        dom.chatInput.value = '';
-        return;
-    }
-
-    if (nickname) {
-        const messagesRef = ref(database, 'messages');
-        push(messagesRef, {
-            nickname: nickname,
-            text: messageText,
-            timestamp: serverTimestamp()
-        }).catch(error => console.error("Message send failed:", error));
-        dom.chatInput.value = '';
-    }
-}
-
-function sendSystemMessage(text: string) {
-    if (!database) return;
-    const messagesRef = ref(database, 'messages');
-    push(messagesRef, {
-        nickname: '[SYSTEM]',
-        text: text,
-        timestamp: serverTimestamp()
-    }).catch(error => console.error("System message send failed:", error));
-}
-
-function sendSpecialSystemMessage(text: string, type: string) {
-    if (!database) return;
-    const messagesRef = ref(database, 'messages');
-    push(messagesRef, {
-        nickname: `[${type}]`,
-        text: text,
-        timestamp: serverTimestamp()
-    }).catch(error => console.error("Special system message send failed:", error));
-}
-
-function toggleChatPanelVisibility() {
-    if (!dom.chatPanel || !dom.openChatButton) return;
-    const isCurrentlyHidden = dom.chatPanel.classList.contains('hidden');
-
-    if (isCurrentlyHidden) {
-        // It's hidden, so show it
-        dom.chatPanel.classList.remove('hidden');
-        dom.openChatButton.classList.add('hidden');
-        localStorage.setItem('cubeCoinSimChatHidden', 'false');
-    } else {
-        // It's visible, so hide it
-        dom.chatPanel.classList.add('hidden');
-        dom.openChatButton.classList.remove('hidden');
-        localStorage.setItem('cubeCoinSimChatHidden', 'true');
-    }
-}
-
-function loadChatPanelVisibility() {
-    if (!dom.chatPanel || !dom.openChatButton) return;
-    const isHidden = localStorage.getItem('cubeCoinSimChatHidden') === 'true';
-    if (isHidden) {
-        dom.chatPanel.classList.add('hidden');
-        dom.openChatButton.classList.remove('hidden');
-    } else {
-        dom.chatPanel.classList.remove('hidden');
-        dom.openChatButton.classList.add('hidden');
-    }
-}
-
-function toggleDevMode() {
-    isDevMode = !isDevMode;
-    dom.devPanel.classList.toggle('hidden');
-    showNotification(isDevMode ? '개발자 모드가 활성화되었습니다.' : '개발자 모드가 비활성화되었습니다.', false);
-}
-
-function populateDevPanel() {
-    if (!dom.devWeatherSelect) return;
-    dom.devWeatherSelect.innerHTML = '';
-    Object.keys(WEATHER_DATA).forEach(weather => {
-        const option = document.createElement('option');
-        option.value = weather;
-        option.textContent = weather;
-        dom.devWeatherSelect.appendChild(option);
-    });
-}
-
-function handleDevWeather() {
-    if (!database) return;
-    const newWeather = dom.devWeatherSelect.value;
-    const globalStateRef = ref(database, 'globalState');
-    update(globalStateRef, { weather: newWeather });
-    sendSystemMessage(`[DEV] 날씨가 강제로 '${newWeather}'(으)로 변경되었습니다.`);
-    showNotification(`전체 유저의 날씨를 '${newWeather}'(으)로 변경했습니다.`, false);
-}
-
-function handleDevAnnouncement() {
-    const message = dom.devAnnouncementInput.value.trim();
-    if (message) {
-        sendSpecialSystemMessage(message, '공지');
-        dom.devAnnouncementInput.value = '';
-    } else {
-        showNotification('공지 내용을 입력해주세요.', true);
-    }
-}
-
-function handleDevPrice(coinId: 'cube' | 'lunar' | 'energy' | 'prism') {
-    if (!database) return;
-    const input = dom[`devPrice${coinId.charAt(0).toUpperCase() + coinId.slice(1)}Input`];
-    const newPrice = parseInt(input.value);
-
-    if (isNaN(newPrice) || newPrice <= 0) {
-        showNotification('유효한 가격을 입력해주세요.', true);
-        return;
-    }
-
-    const priceUpdate: { [key: string]: number } = {};
-    priceUpdate[`price_${coinId}`] = newPrice;
-    
-    const globalStateRef = ref(database, 'globalState');
-    update(globalStateRef, priceUpdate);
-    
-    input.value = '';
-    showNotification(`전체 유저의 ${coinId.toUpperCase()} 가격을 ${newPrice.toLocaleString()}으로 변경했습니다.`, false);
-}
-
-function handleDevResetData() {
-    if (!dom.devResetData) return;
-    
-    if (resetConfirmationStep === 0) {
-        showNotification('초기화하려면 버튼을 한 번 더 누르세요. 모든 진행 상황이 삭제됩니다.', true);
-        dom.devResetData.textContent = '정말로 초기화하시겠습니까?';
-        dom.devResetData.classList.remove('bg-red-800', 'hover:bg-red-900');
-        dom.devResetData.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-        resetConfirmationStep = 1;
-
-        // Reset confirmation after a few seconds to prevent accidental clicks
-        setTimeout(() => {
-            if (resetConfirmationStep === 1) {
-                 resetConfirmationStep = 0;
-                 dom.devResetData.textContent = '전체 데이터 초기화';
-                 dom.devResetData.classList.add('bg-red-800', 'hover:bg-red-900');
-                 dom.devResetData.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-            }
-        }, 4000); // 4 seconds to confirm
-    } else if (resetConfirmationStep === 1) {
-        // Clear localStorage
-        localStorage.removeItem('cubeCoinSimGameState');
-        localStorage.removeItem('cubeCoinSimChatHidden');
-        
-        // Show notification and reload
-        showNotification('데이터가 초기화되었습니다. 게임을 다시 시작합니다.', false);
-        
-        // Reload the page to apply changes
-        setTimeout(() => {
-            window.location.reload();
-        }, 1500); // Wait for the notification to be seen
-    }
-}
-
-
 function handleMining() {
     const state = gameState;
     const tier = state.computerTier;
@@ -1007,7 +882,7 @@ function updateTransactionHistoryUI() {
     const list = dom.transactionHistoryList;
     if (!list) return;
     list.innerHTML = ''; // Clear previous entries
-    if (gameState.transactionHistory.length === 0) {
+    if (!gameState.transactionHistory || gameState.transactionHistory.length === 0) {
         list.innerHTML = `<p class="text-gray-400 text-center py-4">거래 기록이 없습니다.</p>`;
         return;
     }
@@ -1054,17 +929,29 @@ function handleSleep() {
     setTimeout(() => {
         const hoursToSleep = (32 - gameTime.getHours()) % 24;
         const minutesToSleep = hoursToSleep * 60;
-        const secondsSlept = minutesToSleep; // 1 game minute = 1 real second
+        const secondsSlept = minutesToSleep * 4; // 1 game minute = 0.25 real second -> 1 game hour = 15 real seconds
         
         let baseProduction = 0;
         if(state.isCubePurchased) { baseProduction = 100; if(state.isPrismUpgraded) baseProduction = 400; else if(state.isEnergyUpgraded) baseProduction = 200; }
         const lunarBonus = (state.isLunarUpgraded) ? 100 : 0; // Avg over day/night
-        let totalIncomePerSecond = baseProduction + lunarBonus;
+        let totalIncomePerSecond = (baseProduction + lunarBonus) / 4;
 
         const vpnMultiplier = getVpnMultiplier(state.skills.cube_vpn);
         state.userCash += totalIncomePerSecond * secondsSlept * vpnMultiplier;
         
-        // Mining is handled by its own interval, so no need to calculate it here.
+        // Mining during sleep
+        if (state.computerTier > 0) {
+            const tier = state.computerTier;
+            const sleepRealMinutes = (3000 / 1000) / 60; // 3 second sleep animation
+            const minedCubes = Math.floor(sleepRealMinutes * tier * 0.02);
+            const minedLunar = Math.floor(sleepRealMinutes * tier * 0.015);
+            const minedEnergy = Math.floor(sleepRealMinutes * tier * 0.01);
+            const minedPrism = Math.floor(sleepRealMinutes * tier * 0.005);
+            state.userCubes += minedCubes;
+            state.userLunar += minedLunar;
+            state.userEnergy += minedEnergy;
+            state.userPrisms += minedPrism;
+        }
 
         state.isSleeping = false;
         gameTime.setHours(8, 0, 0, 0);
@@ -1574,13 +1461,26 @@ function handleUseItem(itemId: string) {
     if(itemId === 'artificialFertilizer') duration = 12 * 60 * 60 * 1000; // 12 game hours
     
     gameState.farmBuffs[itemId] = {
-        expiresAt: gameTime.getTime() + duration / 120, // 1 game minute = 0.25 real second
+        expiresAt: gameTime.getTime() + duration / (60 * 4), // 1 game minute = 0.25 real seconds -> duration is in game time milliseconds.
     };
     showNotification(`${FARM_ITEM_DATA[itemId as keyof typeof FARM_ITEM_DATA].krName} 효과가 시작되었습니다!`, false);
     updateInventory();
     saveGameState();
 }
 
+
+async function resetUserData() {
+    if (auth.currentUser) {
+        try {
+            await db.ref('users/' + auth.currentUser.uid).remove();
+            showNotification('데이터가 성공적으로 초기화되었습니다.', false);
+            await handleLogout();
+        } catch(error) {
+            console.error("Data reset failed:", error);
+            showNotification('데이터 초기화에 실패했습니다.', true);
+        }
+    }
+}
 
 function handleCodeSubmit() {
     const input = document.getElementById('code-input') as HTMLInputElement;
@@ -1593,7 +1493,14 @@ function handleCodeSubmit() {
     }
 
     let rewardGiven = false;
-    if (code === 'MONEYBAGS') {
+    if (code === 'RESET') {
+        if (confirm('정말로 모든 게임 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            if (confirm('경고: 두 번째 확인입니다. 모든 진행 상황이 영구적으로 삭제됩니다. 계속하시겠습니까?')) {
+                resetUserData();
+            }
+        }
+        return; 
+    } else if (code === 'MONEYBAGS') {
         gameState.userCash += 1000000;
         showNotification('치트 코드: 1,000,000 KRW가 추가되었습니다!', false);
         rewardGiven = true;
@@ -1640,7 +1547,7 @@ function handleCodeSubmit() {
 /**
  * Safely merges loaded game data with the initial state to prevent data loss on updates.
  * It ensures new state properties are added and handles nested objects correctly.
- * @param loadedData The game state data loaded from localStorage.
+ * @param loadedData The game state data loaded from Firebase.
  * @returns A clean, merged game state object.
  */
 function migrateAndMergeState(loadedData: any): any {
@@ -1674,28 +1581,25 @@ function migrateAndMergeState(loadedData: any): any {
 }
 
 async function saveGameState() {
-    try {
-        gameState.lastOnlineTimestamp = Date.now();
-        localStorage.setItem(`cubeCoinSimGameState`, JSON.stringify(gameState));
-    } catch (error) {
-        console.error("localStorage에 게임 상태 저장 실패:", error);
+    if (auth.currentUser) {
+        try {
+            gameState.lastOnlineTimestamp = Date.now();
+            await db.ref('users/' + auth.currentUser.uid).set(gameState);
+        } catch (error) {
+            console.error("Firebase에 게임 상태 저장 실패:", error);
+            showNotification("게임 저장에 실패했습니다. 인터넷 연결을 확인하세요.", true);
+        }
     }
 }
 
 async function loadGameState() {
-    try {
-        const savedStateJSON = localStorage.getItem(`cubeCoinSimGameState`);
+    if (!auth.currentUser) return false;
 
-        if (savedStateJSON) {
-            let loadedData = {};
-            try {
-                loadedData = JSON.parse(savedStateJSON);
-            } catch (e) {
-                console.error("저장된 데이터를 파싱하는 중 오류 발생, 게임 상태를 초기화합니다.", e);
-                gameState = getInitialGameState();
-                await saveGameState();
-                return false;
-            }
+    try {
+        const snapshot = await db.ref('users/' + auth.currentUser.uid).get();
+
+        if (snapshot.exists()) {
+            const loadedData = snapshot.val();
             
             gameState = migrateAndMergeState(loadedData);
             
@@ -1714,7 +1618,7 @@ async function loadGameState() {
 
                         const avgLunarBonus = gameState.isLunarUpgraded ? (100 * (14 / 24)) : 0; // Average lunar bonus
                         const vpnMultiplier = getVpnMultiplier(gameState.skills.cube_vpn);
-                        offlineCash = offlineSeconds * (avgBaseProd + avgLunarBonus) * vpnMultiplier;
+                        offlineCash = (offlineSeconds / 4) * (avgBaseProd + avgLunarBonus) * vpnMultiplier;
                     }
                     
                     // Offline Mining
@@ -1764,34 +1668,170 @@ async function loadGameState() {
             return false;
         }
     } catch (error) {
-        console.error("localStorage에서 게임 상태 불러오기 실패:", error);
+        console.error("Firebase에서 게임 상태 불러오기 실패:", error);
         gameState = getInitialGameState();
         return false;
     }
 }
 
 // =======================================================
-// 앱 초기화
+// 인증 로직
 // =======================================================
-document.addEventListener('DOMContentLoaded', async () => {
-    dom.loginScreen = document.getElementById('login-screen');
-    dom.mainContent = document.getElementById('main-content');
-    dom.nicknameInputLogin = document.getElementById('nickname-input-login') as HTMLInputElement;
-    dom.nicknameSubmitLogin = document.getElementById('nickname-submit-login');
+function handleAuthError(error: any) {
+    let message = '오류가 발생했습니다. 다시 시도해주세요.';
+    switch (error.code) {
+        case 'auth/invalid-email':
+            message = '유효하지 않은 이메일 주소입니다.';
+            break;
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+            message = '이메일 또는 비밀번호가 잘못되었습니다.';
+            break;
+        case 'auth/email-already-in-use':
+            message = '이미 사용 중인 이메일 주소입니다.';
+            break;
+        case 'auth/weak-password':
+            message = '비밀번호는 6자 이상이어야 합니다.';
+            break;
+    }
+    showNotification(message, true);
+}
 
-    if (dom.nicknameSubmitLogin) {
-        dom.nicknameSubmitLogin.addEventListener('click', handleSetNickname);
-    }
-    if (dom.nicknameInputLogin) {
-        dom.nicknameInputLogin.addEventListener('keypress', (e: KeyboardEvent) => {
-            if (e.key === 'Enter') {
-                handleSetNickname();
-            }
-        });
-    }
+async function onLoginSuccess(loginScreen: HTMLElement, mainContent: HTMLElement, logoutButton: HTMLElement) {
+    await loadGameState();
+    
+    loginScreen.style.display = 'none';
+    mainContent.classList.remove('hidden');
+    logoutButton.classList.remove('hidden');
+    
+    initGame();
+    startGame();
 
     if (window.autosaveInterval) clearInterval(window.autosaveInterval);
     window.autosaveInterval = setInterval(saveGameState, 30000);
+}
+
+async function handleLogin(loginScreen: HTMLElement, mainContent: HTMLElement, logoutButton: HTMLElement) {
+    const emailInput = document.getElementById('login-email-input') as HTMLInputElement;
+    const passwordInput = document.getElementById('login-password-input') as HTMLInputElement;
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        await onLoginSuccess(loginScreen, mainContent, logoutButton);
+    } catch (error) {
+        handleAuthError(error);
+    }
+}
+
+async function handleRegister(loginScreen: HTMLElement, mainContent: HTMLElement, logoutButton: HTMLElement) {
+    const emailInput = document.getElementById('register-email-input') as HTMLInputElement;
+    const passwordInput = document.getElementById('register-password-input') as HTMLInputElement;
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    
+    try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        showNotification('회원가입이 완료되었습니다! 게임을 시작합니다.', false);
+        await onLoginSuccess(loginScreen, mainContent, logoutButton);
+    } catch (error) {
+        handleAuthError(error);
+    }
+}
+
+async function handleLogout() {
+    await saveGameState();
+    stopGame();
+
+    await auth.signOut();
+
+    gameState = getInitialGameState();
+
+    const mainContent = document.getElementById('main-content');
+    const loginScreen = document.getElementById('login-screen');
+    const logoutButton = document.getElementById('logout-button');
+
+    if (mainContent && loginScreen && logoutButton) {
+        mainContent.classList.add('hidden');
+        loginScreen.style.display = 'flex';
+        logoutButton.classList.add('hidden');
+    }
+}
+
+
+// =======================================================
+// 앱 초기화
+// =======================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    const loginScreen = document.getElementById('login-screen');
+    const mainContent = document.getElementById('main-content');
+    const loginButton = document.getElementById('login-button');
+    const registerButton = document.getElementById('register-button');
+    const logoutButton = document.getElementById('logout-button') as HTMLElement;
+    
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const showRegisterButton = document.getElementById('show-register-form');
+    const showLoginButton = document.getElementById('show-login-form');
+
+    const updateBanner = document.getElementById('update-banner');
+    const countdownTimer = document.getElementById('countdown-timer');
+
+    // v2 업데이트 카운트다운 로직
+    const v2UpdateTime = new Date('2025-08-01T00:00:00+09:00').getTime();
+    const countdownDuration = 5 * 60 * 60 * 1000; // 5 hours in milliseconds
+
+    const updateCountdown = () => {
+        const now = new Date().getTime();
+        const timeLeft = v2UpdateTime - now;
+
+        if (timeLeft > 0 && timeLeft <= countdownDuration) {
+            if(updateBanner) updateBanner.classList.remove('hidden');
+            
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            if(countdownTimer) countdownTimer.innerHTML = `${hours}시간 ${minutes}분 ${seconds}초`;
+        } else {
+             if(updateBanner) updateBanner.classList.add('hidden');
+        }
+    };
+    
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+
+    // UI 섹션 토글 이벤트 리스너 등록
+    ['assets', 'farm', 'skills', 'trade', 'charts', 'history', 'computer', 'trophy', 'almanac', 'shop', 'code'].forEach(s => {
+        const toggle = document.getElementById(`toggle-${s}`);
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                document.getElementById(`content-${s}`)?.classList.toggle('hidden');
+                document.getElementById(`toggle-${s}-icon`)?.classList.toggle('rotate-180');
+            });
+        }
+    });
+
+    if (!loginScreen || !mainContent || !loginButton || !registerButton || !logoutButton || !loginForm || !registerForm || !showRegisterButton || !showLoginButton) {
+        console.error("UI elements not found!");
+        return;
+    }
+    
+    showRegisterButton.addEventListener('click', () => {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+    });
+
+    showLoginButton.addEventListener('click', () => {
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+    });
+    
+    loginButton.addEventListener('click', () => handleLogin(loginScreen, mainContent, logoutButton));
+    registerButton.addEventListener('click', () => handleRegister(loginScreen, mainContent, logoutButton));
+    logoutButton.addEventListener('click', handleLogout);
 });
 
 // FIX: Add empty export to treat this file as a module, enabling global declarations.
