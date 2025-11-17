@@ -1893,11 +1893,26 @@ async function onLoginSuccess(loginScreen: HTMLElement, mainContent: HTMLElement
         }
 
         if (eventId && !gameState.processedEvents[eventId]) {
+            let stateWasModified = false;
             if (event.type === 'GIVE_MONEY') {
                 gameState.userCash += Number(event.amount);
                 showNotification(`관리자로부터 ${Number(event.amount).toLocaleString()} KRW를 받았습니다!`, false);
+                stateWasModified = true;
+            } else if (event.type === 'TAKE_MONEY') {
+                const amountToTake = Number(event.amount);
+                const cashBefore = gameState.userCash;
+                gameState.userCash = Math.max(0, gameState.userCash - amountToTake);
+                const actualAmountTaken = cashBefore - gameState.userCash;
+                if(actualAmountTaken > 0) {
+                    showNotification(`관리자에 의해 ${actualAmountTaken.toLocaleString()} KRW가 회수되었습니다.`, true);
+                }
+                stateWasModified = true;
             }
+
             gameState.processedEvents[eventId] = true;
+            if (stateWasModified) {
+                saveGameState();
+            }
         }
     });
     
@@ -2048,6 +2063,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('dev-give-money-btn')?.addEventListener('click', () => {
         const amount = Number((document.getElementById('dev-money-amount') as HTMLInputElement).value);
         if (amount > 0) db.ref('globalState/events').push({ type: 'GIVE_MONEY', amount });
+    });
+    document.getElementById('dev-take-money-btn')?.addEventListener('click', () => {
+        const amountInput = document.getElementById('dev-take-money-amount') as HTMLInputElement;
+        const amount = Number(amountInput.value);
+        if (amount > 0) {
+            if (confirm(`정말로 모든 유저에게서 ${amount.toLocaleString()} KRW를 회수하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+                db.ref('globalState/events').push({ type: 'TAKE_MONEY', amount });
+                amountInput.value = '';
+            }
+        } else {
+            alert('회수할 금액을 올바르게 입력해주세요.');
+        }
     });
     document.getElementById('dev-set-weather-btn')?.addEventListener('click', () => {
         const weather = (document.getElementById('dev-weather-select') as HTMLSelectElement).value;
