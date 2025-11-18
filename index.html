@@ -25,20 +25,60 @@
         /* 탭 활성화 스타일 */
         .tab-active { border-bottom-color: #60a5fa !important; color: #60a5fa !important; font-weight: 600; }
 
-        /* 농장 그리드 스타일 */
-        .farm-plot {
-            aspect-ratio: 1 / 1;
-            background-image: repeating-linear-gradient(0deg, #5a5a5a, #5a5a5a 1px, transparent 1px, transparent 10px),
-                              repeating-linear-gradient(90deg, #5a5a5a, #5a5a5a 1px, transparent 1px, transparent 10px);
-            background-color: #4a3a2a;
-        }
-        .farm-plot:hover {
-            background-color: #5c4835;
-        }
-        
     </style>
 </head>
 <body class="bg-gray-900 text-white">
+    <!-- Auth Container -->
+    <div id="auth-container" class="h-screen w-screen flex items-center justify-center bg-gray-900">
+        <div class="w-full max-w-sm">
+            <!-- Login View -->
+            <div id="login-view">
+                <div class="bg-gray-800 p-8 rounded-lg shadow-xl">
+                    <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터</h1>
+                    <h2 class="text-xl font-semibold text-center text-gray-300 mb-6">로그인</h2>
+                    <form id="login-form">
+                        <div class="mb-4">
+                            <label for="login-email-input" class="block text-gray-400 text-sm font-bold mb-2">이메일</label>
+                            <input type="email" id="login-email-input" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="login-password-input" class="block text-gray-400 text-sm font-bold mb-2">비밀번호</label>
+                            <input type="password" id="login-password-input" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <button type="submit" id="login-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline">로그인</button>
+                    </form>
+                    <p class="text-sm text-center text-gray-400 mt-6">
+                        계정이 없으신가요? <a href="#" id="show-register-link" class="font-medium text-blue-400 hover:underline">회원가입</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Register View -->
+            <div id="register-view" class="hidden">
+                <div class="bg-gray-800 p-8 rounded-lg shadow-xl">
+                    <h1 class="text-3xl font-bold text-center text-white mb-2">큐브 코인 시뮬레이터</h1>
+                    <h2 class="text-xl font-semibold text-center text-gray-300 mb-6">회원가입</h2>
+                    <form id="register-form">
+                        <div class="mb-4">
+                            <label for="register-email-input" class="block text-gray-400 text-sm font-bold mb-2">이메일</label>
+                            <input type="email" id="register-email-input" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="register-password-input" class="block text-gray-400 text-sm font-bold mb-2">비밀번호</label>
+                            <input type="password" id="register-password-input" class="w-full bg-gray-700 text-white p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                            <p class="text-xs text-gray-500 mt-2">비밀번호는 6자 이상이어야 합니다.</p>
+                        </div>
+                        <button type="submit" id="register-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline">회원가입</button>
+                    </form>
+                    <p class="text-sm text-center text-gray-400 mt-6">
+                        이미 계정이 있으신가요? <a href="#" id="show-login-link" class="font-medium text-blue-400 hover:underline">로그인</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Global Announcement Banner -->
     <div id="global-announcement" class="hidden bg-indigo-500 text-white p-2 font-bold flex justify-between items-center">
         <span id="announcement-text"></span>
@@ -53,39 +93,6 @@
         v2 업데이트가 <span id="countdown-timer"></span> 후에 진행됩니다!
     </div>
     
-    <!-- Login Screen -->
-    <div id="login-screen" class="fixed inset-0 bg-gray-900 flex items-center justify-center z-50">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-sm">
-            <!-- Login Form -->
-            <div id="login-form">
-                <h1 class="text-3xl font-bold mb-2 text-center">로그인</h1>
-                <p class="text-gray-400 mb-6 text-center">계속하려면 로그인하세요.</p>
-                <div class="space-y-4">
-                    <input type="email" id="login-email-input" autocomplete="email" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="이메일">
-                    <input type="password" id="login-password-input" autocomplete="current-password" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="비밀번호">
-                    <button id="login-button" class="w-full bg-blue-600 hover:bg-blue-700 font-bold p-3 rounded-lg">로그인</button>
-                </div>
-                <p class="text-sm text-gray-400 mt-6 text-center">
-                    계정이 없으신가요? <button id="show-register-form" class="text-blue-400 hover:underline font-semibold">회원가입</button>
-                </p>
-            </div>
-
-            <!-- Registration Form (hidden by default) -->
-            <div id="register-form" class="hidden">
-                 <h1 class="text-3xl font-bold mb-2 text-center">회원가입</h1>
-                 <p class="text-gray-400 mb-6 text-center">새 계정을 만드세요.</p>
-                 <div class="space-y-4">
-                    <input type="email" id="register-email-input" autocomplete="email" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="이메일">
-                    <input type="password" id="register-password-input" autocomplete="new-password" class="w-full bg-gray-700 text-white p-3 rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="비밀번호">
-                    <button id="register-button" class="w-full bg-green-600 hover:bg-green-700 font-bold p-3 rounded-lg">회원가입</button>
-                 </div>
-                 <p class="text-sm text-gray-400 mt-6 text-center">
-                    이미 계정이 있으신가요? <button id="show-login-form" class="text-blue-400 hover:underline font-semibold">로그인</button>
-                 </p>
-            </div>
-        </div>
-    </div>
-
     <!-- Dev Panel (Modal) -->
     <div id="dev-panel" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl text-white flex flex-col max-h-full">
@@ -124,7 +131,6 @@
                         <input type="text" id="dev-code-id" placeholder="코드 (예: WELCOME10)" class="w-full bg-gray-800 p-2 rounded border border-gray-600 uppercase">
                         <select id="dev-code-reward-type" class="w-full bg-gray-800 p-2 rounded border border-gray-600">
                             <option value="userCash">현금 (KRW)</option>
-                            <option value="farmCoin">농장 코인 (TK)</option>
                             <option value="userCubes">CUBE</option>
                             <option value="userLunar">LUNAR</option>
                             <option value="userEnergy">ENERGY</option>
@@ -203,7 +209,7 @@
                 <!-- 우측: 게임 타이틀 & 로그아웃 -->
                  <div class="flex items-center gap-4">
                     <div class="text-lg font-bold text-white">큐브 코인 시뮬레이터</div>
-                    <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-sm font-bold py-2 px-4 rounded-lg hidden">로그아웃</button>
+                    <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-sm">로그아웃</button>
                 </div>
             </div>
         </header>
@@ -271,15 +277,42 @@
             <div class="w-1/2 p-6 bg-gray-900 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
                 <h1 class="text-3xl font-bold text-white mb-2">대시보드</h1>
                 
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-assets" class="px-4 pb-4"><div class="grid grid-cols-2 md:grid-cols-3 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">농장 코인 (TK)</h3><div id="user-farm-coin" class="text-2xl font-bold text-yellow-600">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="user-cubes" class="text-2xl font-bold text-blue-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">루나 (LUNAR)</h3><div id="user-lunar" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">에너지 (ENERGY)</h3><div id="user-energy" class="text-2xl font-bold text-yellow-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-assets"><h3 class="text-lg font-semibold text-white">내 자산 현황</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-assets-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-assets" class="px-4 pb-4"><div class="grid grid-cols-2 md:grid-cols-3 gap-4"><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">현금 (KRW)</h3><div id="user-cash" class="text-2xl font-bold text-blue-400">100,000</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">큐브 (CUBE)</h3><div id="user-cubes" class="text-2xl font-bold text-blue-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">루나 (LUNAR)</h3><div id="user-lunar" class="text-2xl font-bold text-purple-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">에너지 (ENERGY)</h3><div id="user-energy" class="text-2xl font-bold text-yellow-400">0</div></div><div class="bg-gray-600 p-4 rounded-lg"><h3 class="text-sm font-semibold text-gray-300">프리즘 (PRISM)</h3><div id="user-prisms" class="text-2xl font-bold text-pink-400">0</div></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-trade"><h3 class="text-lg font-semibold text-white">거래소</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-trade-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-trade" class="px-4 pb-4"><div id="trade-container" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-charts"><h3 class="text-lg font-semibold text-white">차트</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-charts-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-charts" class="px-4 pb-4"><div class="flex border-b border-gray-600 mb-2"><button id="chart-tab-cube" class="flex-1 text-gray-400 p-2 border-b-2 border-transparent hover:text-white tab-active">CUBE</button><button id="chart-tab-lunar" class="flex-1 text-gray-400 p-2 border-b-2 border-transparent hover:text-white">LUNAR</button><button id="chart-tab-energy" class="flex-1 text-gray-400 p-2 border-b-2 border-transparent hover:text-white">ENERGY</button><button id="chart-tab-prism" class="flex-1 text-gray-400 p-2 border-b-2 border-transparent hover:text-white">PRISM</button></div><div class="relative h-64"><div id="chart-cube-container"><canvas id="price-chart-cube"></canvas></div><div id="chart-lunar-container" class="hidden"><canvas id="price-chart-lunar"></canvas></div><div id="chart-energy-container" class="hidden"><canvas id="price-chart-energy"></canvas></div><div id="chart-prism-container" class="hidden"><canvas id="price-chart-prism"></canvas></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-history"><h3 class="text-lg font-semibold text-white">거래 기록</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-history-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-history" class="px-4 pb-4"><div id="transaction-history-list" class="space-y-1 max-h-64 overflow-y-auto custom-scrollbar pr-2"></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-computer"><h3 class="text-lg font-semibold text-white">컴퓨터 (자동 채굴)</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-computer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-computer" class="px-4 pb-4"><div id="computer-info" class="bg-gray-600 p-4 rounded-lg text-center"><h4 id="computer-tier-text" class="text-lg font-bold">컴퓨터 없음</h4><p id="computer-stats-text" class="text-sm text-gray-300 mt-2"></p><button id="computer-upgrade-button" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">250,000 KRW에 구매</button></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-computer"><h3 class="text-lg font-semibold text-white">컴퓨터 (자동 채굴)</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-computer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-computer" class="px-4 pb-4"><div id="computer-info" class="bg-gray-600 p-4 rounded-lg text-center"><h4 id="computer-tier-text" class="text-lg font-bold">컴퓨터 없음</h4><p id="computer-stats-text" class="text-sm text-gray-300 mt-2"></p><button id="computer-upgrade-button" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 font-bold py-2 px-4 rounded-lg">100,000 KRW에 구매</button></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg" id="weather-almanac-section"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-almanac"><h3 class="text-lg font-semibold text-white">날씨 도감</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-almanac-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-almanac" class="px-4 pb-4"><div id="weather-almanac-content" class="grid grid-cols-1 md:grid-cols-2 gap-2"></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-shop"><h3 class="text-lg font-semibold text-white">상점</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-shop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-shop" class="px-4 pb-4"><div id="shop-section"><h4 class="text-md font-semibold text-gray-300 mb-2">기능</h4><div id="shop-items" class="grid grid-cols-3 gap-2 mb-4"></div><h4 class="text-md font-semibold text-gray-300 mb-2">농사 아이템</h4><div id="farm-shop-items" class="grid grid-cols-4 gap-2"></div></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-shop"><h3 class="text-lg font-semibold text-white">상점</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-shop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-shop" class="px-4 pb-4"><div id="shop-section"><div id="shop-tabs" class="flex border-b border-gray-600 mb-4"><button data-tab="function" class="shop-tab flex-1 text-gray-400 p-2 border-b-2 border-transparent hover:text-white tab-active">기능</button><button data-tab="mining" class="shop-tab flex-1 text-gray-400 p-2 border-b-2 border-transparent hover:text-white">광질</button></div><div id="shop-tab-content-function"><h4 class="text-md font-semibold text-gray-300 mb-2">기능 아이템</h4><div id="shop-items-function" class="grid grid-cols-3 gap-2 mb-4"></div></div><div id="shop-tab-content-mining" class="hidden"><h4 class="text-md font-semibold text-gray-300 mb-2">광질 아이템</h4><div id="shop-items-mining" class="grid grid-cols-3 gap-2 mb-4"></div></div></div></div></div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-trophy"><h3 class="text-lg font-semibold text-white">트로피</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-trophy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-trophy" class="px-4 pb-4"><div id="trophy-list" class="space-y-2"></div></div></div>
-                <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-farm"><h3 class="text-lg font-semibold text-white">농장</h3><svg class="w-5 h-5 text-gray-400" id="toggle-farm-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-farm" class="px-4 pb-4 hidden grid grid-cols-1 md:grid-cols-2 gap-4"><div id="farm-plot-section"></div><div><div id="seed-shop-container"></div><div id="inventory-container" class="mt-4"></div></div></div></div>
+                <div class="bg-gray-700 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-mining"><h3 class="text-lg font-semibold text-white">채굴 및 제련</h3><svg class="w-5 h-5 text-gray-400" id="toggle-mining-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div>
+                    <div id="content-mining" class="px-4 pb-4 hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Left Side: Mining Action & Inventory -->
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-300 mb-2">광맥</h4>
+                            <div id="mining-grid-container" class="grid grid-cols-3 gap-2 mb-4">
+                                <!-- Mining grid will be populated by JS -->
+                            </div>
+                            
+                            <h4 class="text-md font-semibold text-gray-300 mb-2">재료 인벤토리</h4>
+                            <div id="mining-inventory" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                                <!-- Mining inventory items will be populated by JS -->
+                            </div>
+                        </div>
+                        <!-- Right Side: Crafting & Smelting -->
+                        <div>
+                            <h4 class="text-md font-semibold text-gray-300 mb-2">제련</h4>
+                            <div id="smelting-options" class="space-y-2 mb-4">
+                                 <!-- Smelting options will be populated by JS -->
+                            </div>
+                             <h4 class="text-md font-semibold text-gray-300 mb-2">제련 대기열</h4>
+                            <div id="smelting-queue-display" class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                                <!-- Smelting queue will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="bg-gray-700 rounded-lg shadow-lg"><div class="flex justify-between items-center p-4 cursor-pointer" id="toggle-code"><h3 class="text-lg font-semibold text-white">코드 입력</h3><svg class="w-5 h-5 text-gray-400 rotate-180" id="toggle-code-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></div><div id="content-code" class="px-4 pb-4"><div class="flex gap-2"><input type="text" id="code-input" class="w-full bg-gray-800 text-white p-2 rounded border border-gray-600 uppercase" placeholder="프로모션 코드"><button id="code-submit-button" class="bg-green-600 hover:bg-green-700 font-bold px-4 rounded">입력</button></div><p class="text-xs text-gray-500 mt-2">'RESET'을 입력하여 데이터를 초기화할 수 있습니다.</p></div></div>
             </div>
 
