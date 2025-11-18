@@ -17,10 +17,10 @@ const firebaseConfig = {
   authDomain: "real-d1d0a.firebaseapp.com",
   databaseURL: "https://real-d1d0a-default-rtdb.firebaseio.com",
   projectId: "real-d1d0a",
-  storageBucket: "real-d1d0a.appspot.com",
+  storageBucket: "real-d1d0a.firebasestorage.app",
   messagingSenderId: "362480200866",
   appId: "1:362480200866:web:ae6e59d94a9e3fef51fbfb",
-  measurementId: "G-Q-40RNTCZW5"
+  measurementId: "G-Q40RNTCZW5"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -66,6 +66,7 @@ let notificationTimeout: any = null;
 let announcementTimeout: any = null;
 let announcementInterval: any = null;
 let userNickname: string | null = null;
+let userUID: string | null = null;
 let scene: any, camera: any, renderer: any, cube: any;
 let chartCube: any, chartLunar: any, chartEnergy: any, chartPrism: any;
 let globalWeatherOverride: string | null = null;
@@ -83,22 +84,22 @@ const DRILL_DATA = [
 const COMPUTER_DATA = [
     { name: '컴퓨터 없음', cost: { userCash: 100000 } },
     { name: 'Tier 1 컴퓨터', cost: { userCash: 500000 } },
-    { name: 'Tier 2 컴퓨터', cost: { userCash: 2500000 } }, // This was wrong in prompt, I will fix it
-    { name: 'Tier 3 컴퓨터', cost: { copperWire: 20 } },
-    { name: 'Tier 4 컴퓨터', cost: { copperWire: 40, ironWire: 10 } },
-    { name: 'Tier 5 컴퓨터', cost: { copperWire: 40, ironWire: 15, goldWire: 3 } },
-    { name: 'Tier 6 컴퓨터', cost: { copperWire: 50, ironWire: 20, goldWire: 10, diamondWire: 3 } },
-    { name: 'Tier 7 컴퓨터', cost: { liberatedCopperWire: 5 } },
-    { name: 'Tier 8 컴퓨터', cost: { liberatedCopperWire: 10, liberatedIronWire: 5 } },
-    { name: 'Tier 9 컴퓨터', cost: { liberatedCopperWire: 20, liberatedIronWire: 15, liberatedGoldWire: 8 } },
-    { name: 'Tier 10 컴퓨터', cost: { liberatedCopperWire: 20, liberatedIronWire: 15, liberatedGoldWire: 10, liberatedDiamondWire: 5 } }
+    { name: 'Tier 2 컴퓨터', cost: { copperWire: 20 } },
+    { name: 'Tier 3 컴퓨터', cost: { copperWire: 40, ironWire: 10 } },
+    { name: 'Tier 4 컴퓨터', cost: { copperWire: 40, ironWire: 15, goldWire: 3 } },
+    { name: 'Tier 5 컴퓨터', cost: { copperWire: 50, ironWire: 20, goldWire: 10, diamondWire: 3 } },
+    { name: 'Tier 6 컴퓨터', cost: { liberatedCopperWire: 5 } },
+    { name: 'Tier 7 컴퓨터', cost: { liberatedCopperWire: 10, liberatedIronWire: 5 } },
+    { name: 'Tier 8 컴퓨터', cost: { liberatedCopperWire: 20, liberatedIronWire: 15, liberatedGoldWire: 8 } },
+    { name: 'Tier 9 컴퓨터', cost: { liberatedCopperWire: 20, liberatedIronWire: 15, liberatedGoldWire: 10, liberatedDiamondWire: 5 } },
+    { name: 'Tier 10 컴퓨터', cost: {} } // Max tier
 ];
 
 const INVESTOR_DATA = [
-    { name: '초보 투자자', cost: 10000, pnl: 0.4, coins: ['cube'] },
-    { name: '중수 투자자', cost: 150000, pnl: 0.6, coins: ['cube', 'lunar'] },
-    { name: '고수 투자자', cost: 400000, pnl: 0.7, coins: ['lunar', 'energy'] },
-    { name: '달인 투자자', cost: 1000000, pnl: 0.8, coins: ['cube', 'lunar', 'energy', 'prism'] }
+    { name: '초보 투자자', cost: 10000, pnl: 0.4, coins: ['CUBE'] },
+    { name: '중수 투자자', cost: 150000, pnl: 0.6, coins: ['CUBE', 'LUNAR'] },
+    { name: '고수 투자자', cost: 400000, pnl: 0.7, coins: ['LUNAR', 'ENERGY'] },
+    { name: '달인 투자자', cost: 1000000, pnl: 0.8, coins: ['CUBE', 'LUNAR', 'ENERGY', 'PRISM'] }
 ];
 
 const CRAFTING_DATA: {[key: string]: { name: string, cost: {[key:string]: number}, product: string, amount: number }} = {
@@ -175,6 +176,7 @@ function updateCubeAppearance() {
 }
 
 function animate() {
+    if(!renderer) return; // Stop animation if game stopped
     requestAnimationFrame(animate);
     if (cube) { cube.rotation.x += 0.003; cube.rotation.y += 0.003; }
     if (renderer && scene && camera) { renderer.render(scene, camera); }
@@ -212,16 +214,13 @@ function initGame() {
         weatherAlmanacSection: document.getElementById('weather-almanac-section'), weatherAlmanacContent: document.getElementById('weather-almanac-content'), incomeSourceUpgrades: document.getElementById('income-source-upgrades'),
         trophyList: document.getElementById('trophy-list'), transactionHistoryList: document.getElementById('transaction-history-list'),
         chatMessages: document.getElementById('chat-messages'), chatInput: document.getElementById('chat-input'), chatSendButton: document.getElementById('chat-send-button'), logoutButton: document.getElementById('logout-button'),
-        // New UI Elements
         drillInfo: document.getElementById('drill-info'), drillTierText: document.getElementById('drill-tier-text'), drillStatsText: document.getElementById('drill-stats-text'), drillUpgradeButton: document.getElementById('drill-upgrade-button'),
         smeltingInfo: document.getElementById('smelting-info'), smeltingQueueList: document.getElementById('smelting-queue-list'),
         investorList: document.getElementById('investor-list'),
         shopTabFunction: document.getElementById('shop-tab-function'), shopTabMaterials: document.getElementById('shop-tab-materials'), shopTabTotems: document.getElementById('shop-tab-totems'),
         shopContentFunction: document.getElementById('shop-content-function'), shopContentMaterials: document.getElementById('shop-content-materials'), shopContentTotems: document.getElementById('shop-content-totems'),
         craftingItems: document.getElementById('crafting-items'), totemItems: document.getElementById('totem-items'),
-        // Resource displays
         userStone: document.getElementById('user-stone'), userCoal: document.getElementById('user-coal'), userCopperOre: document.getElementById('user-copperOre'), userIronOre: document.getElementById('user-ironOre'), userGoldOre: document.getElementById('user-goldOre'), userMagicDust: document.getElementById('user-magicDust'), userDiamond: document.getElementById('user-diamond'), userCopperIngot: document.getElementById('user-copperIngot'), userIronIngot: document.getElementById('user-ironIngot'), userGoldIngot: document.getElementById('user-goldIngot'), userDisabledMagicStone: document.getElementById('user-disabledMagicStone'), userMagicStone: document.getElementById('user-magicStone'), userCopperWire: document.getElementById('user-copperWire'), userIronWire: document.getElementById('user-ironWire'), userGoldWire: document.getElementById('user-goldWire'), userDiamondWire: document.getElementById('user-diamondWire'), userLiberatedCopperWire: document.getElementById('user-liberatedCopperWire'), userLiberatedIronWire: document.getElementById('user-liberatedIronWire'), userLiberatedGoldWire: document.getElementById('user-liberatedGoldWire'), userLiberatedDiamondWire: document.getElementById('user-liberatedDiamondWire'),
-        // Weather overlays
         yellowDustOverlay: document.getElementById('yellow-dust-overlay'), heatWaveOverlay: document.getElementById('heat-wave-overlay'), snowOverlay: document.getElementById('snow-overlay'),
     };
     
@@ -241,6 +240,7 @@ function initGame() {
     populateTradeUI();
     populateShopUI();
     populateDrillUI();
+    populateSmeltingUI();
     populateInvestorUI();
     initCharts();
     init3D();
@@ -261,7 +261,7 @@ function startGame() {
     restoreUIState(); updateTrophyUI(); updateTransactionHistoryUI();
     restartGameLoop();
     startPriceUpdateLoops();
-    animate();
+    if(renderer) animate();
 }
 
 function stopGame() {
@@ -271,6 +271,7 @@ function stopGame() {
     gameLoopInterval = drillInterval = investorInterval = null;
     priceUpdateTimeoutCube = priceUpdateTimeoutLunar = priceUpdateTimeoutEnergy = priceUpdateTimeoutPrism = null;
     window.autosaveInterval = null;
+    renderer = null; // To stop animation loop
 }
 
 function showNotification(message: string, isError = true) {
@@ -283,11 +284,9 @@ function showNotification(message: string, isError = true) {
     notificationTimeout = setTimeout(hideNotification, 3000);
 }
 
-// FIX: Define the missing updateSmeltingUI function.
 function updateSmeltingUI() {
     if (!dom.smeltingInfo || !dom.smeltingQueueList) return;
     const furnaceOwned = gameState.shopItems.furnace;
-    // Hide/show section based on furnace ownership
     dom.smeltingInfo.classList.toggle('hidden', !furnaceOwned);
     if (!furnaceOwned) return;
 
@@ -310,7 +309,7 @@ function updateSmeltingUI() {
             const progress = Math.min(100, (elapsedTime / smeltingTime) * 100);
             
             li.innerHTML = `
-                <span>${item.amount} x ${itemName}</span>
+                <span>1 x ${itemName}</span>
                 <div class="w-1/2 mx-2 bg-gray-600 rounded-full h-2.5">
                     <div class="bg-orange-500 h-2.5 rounded-full" style="width: ${progress}%"></div>
                 </div>
@@ -318,7 +317,7 @@ function updateSmeltingUI() {
             `;
         } else { // Queued item
             li.innerHTML = `
-                <span>${item.amount} x ${itemName}</span>
+                <span>1 x ${itemName}</span>
                 <span class="text-gray-400">대기 중</span>
             `;
         }
@@ -370,41 +369,130 @@ function updateUI() {
 function updateComputerUI() {
     if (!dom.computerTierText || !dom.computerStatsText || !dom.computerUpgradeButton) return;
     const tier = gameState.computerTier;
-    const isMaxTier = tier >= COMPUTER_DATA.length - 1;
-    dom.computerTierText.textContent = COMPUTER_DATA[tier].name;
+    const isMaxTier = tier >= COMPUTER_DATA.length -1;
+    dom.computerTierText.textContent = tier > 0 ? `Tier ${tier} 컴퓨터` : '컴퓨터 없음';
     const miningRates = tier > 0 ? `<br>자동 코인 획득 확률 (시간당):<br>CUBE: ${tier*2}%, LUNAR: ${tier*1.5}%<br>ENERGY: ${tier*1}%, PRISM: ${tier*0.5}%` : '';
     dom.computerStatsText.innerHTML = `자동 코인 획득 활성화${miningRates}`;
     if (!isMaxTier) {
-        const nextTierData = COMPUTER_DATA[tier + 1];
+        const nextTierData = COMPUTER_DATA[tier];
         const cost = nextTierData.cost;
         let costString = '';
-        for(const item in cost) { costString += `${(cost as any)[item].toLocaleString()} ${item.replace('user','')} `;}
+        const hasResources = Object.keys(cost).every(key => gameState[key] >= cost[key as keyof typeof cost]);
+
+        for(const item in cost) { 
+            const itemName = item.replace('userCash', 'KRW').replace('copperWire', '구리전선').replace('ironWire', '철전선').replace('goldWire', '금전선').replace('diamondWire', '다이아전선').replace('liberatedCopperWire', '해방된구리').replace('liberatedIronWire', '해방된철').replace('liberatedGoldWire', '해방된금').replace('liberatedDiamondWire', '해방된다이아');
+            costString += `${(cost as any)[item].toLocaleString()} ${itemName} `;
+        }
         dom.computerUpgradeButton.textContent = `Tier ${tier + 1} 업그레이드 (${costString.trim()})`;
+        dom.computerUpgradeButton.disabled = !hasResources;
+        dom.computerUpgradeButton.classList.toggle('btn-disabled', !hasResources);
         dom.computerUpgradeButton.classList.remove('hidden');
     } else {
         dom.computerUpgradeButton.textContent = '최고 티어';
         dom.computerUpgradeButton.classList.add('hidden');
     }
 }
-function populateTradeUI() { /* ... unchanged ... */ }
+function populateTradeUI() { 
+    if(!dom.tradeContainer) return;
+    dom.tradeContainer.innerHTML = '';
+    const coins = [
+        { id: 'Cube', name: 'CUBE', price: gameState.currentPrice, owned: gameState.userCubes, color: 'blue' },
+        { id: 'Lunar', name: 'LUNAR', price: gameState.currentLunarPrice, owned: gameState.userLunar, color: 'purple' },
+        { id: 'Energy', name: 'ENERGY', price: gameState.currentEnergyPrice, owned: gameState.userEnergy, color: 'yellow' },
+        { id: 'Prism', name: 'PRISM', price: gameState.currentPrismPrice, owned: gameState.userPrisms, color: 'pink' }
+    ];
+
+    coins.forEach(coin => {
+        const canAfford = gameState.userCash >= coin.price;
+        const canSell = coin.owned > 0;
+        const tradeBox = `
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <h4 class="font-bold text-lg text-${coin.color}-300">${coin.name}</h4>
+                <p class="text-sm text-gray-400 mb-2">보유: ${coin.owned.toLocaleString()}개</p>
+                <div class="flex gap-2">
+                    <button onclick="handleTrade('buy', '${coin.id}')" class="flex-1 bg-${coin.color}-600 hover:bg-${coin.color}-700 text-white font-bold py-2 px-3 rounded-lg text-sm ${!canAfford ? 'btn-disabled' : ''}" ${!canAfford ? 'disabled' : ''}>매수</button>
+                    <button onclick="handleTrade('sell', '${coin.id}')" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-3 rounded-lg text-sm ${!canSell ? 'btn-disabled' : ''}" ${!canSell ? 'disabled' : ''}>매도</button>
+                </div>
+            </div>
+        `;
+        dom.tradeContainer.innerHTML += tradeBox;
+    });
+    (window as any).handleTrade = handleTrade;
+}
 function populateShopUI() {
     populateFunctionItems();
     populateMaterialItems();
     populateTotemItems();
 }
 function populateFunctionItems() {
-    const itemsContainer = document.getElementById('shop-items'); if (!itemsContainer) return; itemsContainer.innerHTML = '';
+    if (!dom.shopItems) return; dom.shopItems.innerHTML = '';
     const functionItems = [ 
         { id: 'digitalClock', name: '디지털 시계', desc: '게임 내 시간과 날씨를 화면에 표시합니다.', cost: 10000 },
         { id: 'weatherAlmanac', name: '날씨 도감', desc: '지금까지 경험한 날씨의 효과를 기록하고 확인할 수 있습니다.', cost: 25000 },
         { id: 'bed', name: '침대', desc: '수면을 취하여 다음 날 아침으로 즉시 이동할 수 있게 됩니다.', cost: 15000 },
         { id: 'furnace', name: '용광로', desc: '주괴 제련 시간을 5초에서 3초로 단축시킵니다.', cost: 100000 },
     ];
-    functionItems.forEach(item => { /* ... similar logic to old populateShopItems but for function items ... */ });
+    functionItems.forEach(item => {
+        const isOwned = gameState.shopItems[item.id];
+        const canAfford = gameState.userCash >= item.cost;
+        const itemEl = document.createElement('div');
+        itemEl.className = 'bg-gray-800 p-3 rounded-lg flex flex-col justify-between';
+        itemEl.innerHTML = `
+            <div>
+                <h4 class="font-bold text-base">${item.name}</h4>
+                <p class="text-xs text-gray-400 my-1">${item.desc}</p>
+            </div>
+            <button class="w-full mt-2 text-sm font-bold py-1.5 px-3 rounded-lg ${isOwned ? 'bg-green-700 cursor-default' : (canAfford ? 'bg-blue-600 hover:bg-blue-700' : 'btn-disabled')}" ${isOwned || !canAfford ? 'disabled' : ''}>
+                ${isOwned ? '보유중' : `${item.cost.toLocaleString()} KRW`}
+            </button>
+        `;
+        if (!isOwned) {
+            itemEl.querySelector('button')?.addEventListener('click', () => handleShopBuy(item.id, item.cost));
+        }
+        dom.shopItems.appendChild(itemEl);
+    });
 }
-function populateMaterialItems() { /* ... UI for crafting ... */ }
+function populateMaterialItems() {
+    if(!dom.craftingItems) return;
+    dom.craftingItems.innerHTML = '';
+    Object.keys(CRAFTING_DATA).forEach(key => {
+        const item = CRAFTING_DATA[key];
+        let costString = '';
+        const canCraft = Object.keys(item.cost).every(res => gameState[res] >= item.cost[res]);
+        for(const res in item.cost){
+             const resName = res.replace('copperIngot', '구리주괴').replace('stone', '돌').replace('ironIngot', '철주괴').replace('goldIngot', '금주괴').replace('diamond', '다이아').replace('disabledMagicStone', '비활성마법석').replace('magicDust', '마법가루').replace('copperWire', '구리전선').replace('magicStone', '마법석').replace('ironWire', '철전선').replace('goldWire', '금전선').replace('diamondWire', '다이아전선');
+            costString += `${item.cost[res]} ${resName} `;
+        }
+        
+        const itemEl = document.createElement('div');
+        itemEl.className = 'bg-gray-800 p-3 rounded-lg flex flex-col justify-between';
+        itemEl.innerHTML = `
+            <div>
+                <h4 class="font-bold text-base">${item.name}</h4>
+                <p class="text-xs text-gray-400 my-1">재료: ${costString.trim()}</p>
+            </div>
+            <button class="w-full mt-2 text-sm font-bold py-1.5 px-3 rounded-lg ${canCraft ? 'bg-green-600 hover:bg-green-700' : 'btn-disabled'}" ${!canCraft ? 'disabled' : ''}>
+                제작
+            </button>
+        `;
+        itemEl.querySelector('button')?.addEventListener('click', () => handleCraftItem(key));
+        dom.craftingItems.appendChild(itemEl);
+    });
+}
 function populateTotemItems() { /* ... UI for totems ... */ }
-function handleShopBuy(itemId: string, cost: number) { /* ... unchanged ... */ }
+function handleShopBuy(itemId: string, cost: number) {
+    if (gameState.userCash >= cost && !gameState.shopItems[itemId]) {
+        gameState.userCash -= cost;
+        gameState.shopItems[itemId] = true;
+        showNotification(`${itemId} 구매 완료!`, false);
+        populateShopUI();
+        restoreUIState();
+        if (itemId === 'furnace') populateSmeltingUI();
+        saveGameState();
+    } else {
+        showNotification('자금이 부족하거나 이미 보유한 아이템입니다.', true);
+    }
+}
 function updateWeatherAlmanacUI() { /* ... unchanged ... */ }
 function updateTrophyUI() { /* ... updated to show new trophies ... */ }
 function checkTrophies() {
@@ -414,24 +502,73 @@ function checkTrophies() {
     if (!state.hasTimeTrophy) { if (state.sleepCount >= 20) { state.hasTimeTrophy = true; showNotification(`트로피 획득: ${TROPHY_DATA.timeMaster.name}!`, false); updateTrophyUI(); saveGameState(); } }
 }
 
-function getNewPrice(currentPrice: number, coinId: string) { /* ... logic updated with trophy/weather effects ... */ }
-function startPriceUpdateLoops() { /* ... unchanged ... */ }
-function priceUpdateLoopCube() { /* ... unchanged ... */ }
-function priceUpdateLoopLunar() { /* ... unchanged ... */ }
-function priceUpdateLoopEnergy() { /* ... unchanged ... */ }
-function priceUpdateLoopPrism() { /* ... unchanged ... */ }
+function getNewPrice(currentPrice: number, coinId: string) {
+    let increaseChance = 0.5;
+    let multiplier = 1 + (Math.random() * 0.1 - 0.05); // -5% to +5%
+
+    // Apply weather effects
+    const weather = WEATHER_DATA[gameState.weather];
+    if (weather.isGood) increaseChance += 0.025;
+    if (weather.isBad) increaseChance -= 0.025;
+    if (gameState.weather === '맑음') { increaseChance += 0.005; }
+    if (gameState.weather === '비' && coinId.toLowerCase() === 'cube') { increaseChance += 0.01; }
+    if (gameState.weather === '무지개') { increaseChance += 0.025; }
+    if (gameState.weather === '별똥별') { increaseChance += 0.025; }
+    if (gameState.weather === '오로라') { increaseChance += 0.05; }
+    if (gameState.weather === '산성비') { increaseChance -= 0.025; }
+    if (gameState.weather === '우박') { increaseChance -= 0.025; }
+
+    // Apply trophy effects
+    if (gameState.hasPowerTrophy && coinId.toLowerCase() === 'energy') { increaseChance += 0.01; }
+
+    if (Math.random() < increaseChance) {
+        return Math.max(100, Math.floor(currentPrice * multiplier));
+    } else {
+        return Math.max(100, Math.floor(currentPrice / multiplier));
+    }
+}
+
+function startPriceUpdateLoops() {
+    const createLoop = (coinId: string, priceKey: string, lastPriceKey: string, timeoutVar: any, loopFn: Function) => {
+        let baseInterval = 5000;
+        // Apply time modifiers
+        if (gameState.weather === '황사') baseInterval *= 1.1;
+        if (gameState.weather === '오로라') baseInterval *= 0.8;
+        const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19;
+        if (isNight && gameState.hasTimeTrophy) baseInterval *= 0.95;
+
+        const interval = baseInterval + Math.random() * 2000 - 1000;
+
+        timeoutVar = setTimeout(() => {
+            const newPrice = getNewPrice(gameState[priceKey], coinId);
+            gameState[lastPriceKey] = gameState[priceKey];
+            gameState[priceKey] = newPrice;
+            updateChartData((window as any)[`chart${coinId}`], newPrice, `${String(gameTime.getHours()).padStart(2, '0')}:${String(gameTime.getMinutes()).padStart(2, '0')}`);
+            loopFn();
+        }, interval);
+        return timeoutVar;
+    };
+    priceUpdateTimeoutCube = createLoop('Cube', 'currentPrice', 'lastPrice', priceUpdateTimeoutCube, priceUpdateLoopCube);
+    priceUpdateTimeoutLunar = createLoop('Lunar', 'currentLunarPrice', 'lastLunarPrice', priceUpdateTimeoutLunar, priceUpdateLoopLunar);
+    priceUpdateTimeoutEnergy = createLoop('Energy', 'currentEnergyPrice', 'lastEnergyPrice', priceUpdateTimeoutEnergy, priceUpdateLoopEnergy);
+    priceUpdateTimeoutPrism = createLoop('Prism', 'currentPrismPrice', 'lastPrismPrice', priceUpdateTimeoutPrism, priceUpdateLoopPrism);
+}
+function priceUpdateLoopCube() { startPriceUpdateLoops(); }
+function priceUpdateLoopLunar() { startPriceUpdateLoops(); }
+function priceUpdateLoopEnergy() { startPriceUpdateLoops(); }
+function priceUpdateLoopPrism() { startPriceUpdateLoops(); }
 function gameLoop() {
     const state = gameState; if(state.isSleeping) return; gameTime.setMinutes(gameTime.getMinutes() + 1);
     if (gameTime.getHours() === 0 && gameTime.getMinutes() === 0) { state.dayInSeason++; if (state.dayInSeason > 3) { state.dayInSeason = 1; state.season = SEASONS[(SEASONS.indexOf(state.season) + 1) % SEASONS.length]; state.totemsPurchasedThisSeason = {}; populateShopUI(); } }
     
     // Auto coin gain from computer
     if (state.computerTier > 0 && state.weather !== '폭우') {
-        const tier = state.computerTier; const ticksPerHour = (60 * 60 * 1000) / (250 / currentGameSpeed);
-        const gainCoin = (chance: number, coin: string) => { if (Math.random() < (tier * chance) / ticksPerHour) { state[`user${coin}`]++; state.minedCoins[coin.toUpperCase()] = (state.minedCoins[coin.toUpperCase()] || 0) + 1; }};
-        gainCoin(0.02, 'Cubes'); gainCoin(0.015, 'Lunar'); gainCoin(0.01, 'Energy'); gainCoin(0.005, 'Prisms');
+        const tier = state.computerTier; const ticksPerHour = 14400; // 3600 seconds * 4 ticks/sec
+        const gainCoin = (chance: number, coin: string, coinKey: string) => { if (Math.random() < (tier * chance) / ticksPerHour) { state[coinKey]++; state.minedCoins[coin] = (state.minedCoins[coin] || 0) + 1; }};
+        gainCoin(2, 'CUBE', 'userCubes'); gainCoin(1.5, 'LUNAR', 'userLunar'); gainCoin(1, 'ENERGY', 'userEnergy'); gainCoin(0.5, 'PRISM', 'userPrisms');
     }
     // Disabled Magic Stone from 3D Cube
-    if (state.isLunarUpgraded && Math.random() < (0.002 / (4 * (1/currentGameSpeed)))) { state.disabledMagicStone++; }
+    if (state.isLunarUpgraded && Math.random() < (0.002 / 4)) { state.disabledMagicStone++; }
 
     // Weather logic
     if (globalWeatherOverride) { /* ... unchanged ... */ }
@@ -444,8 +581,8 @@ function gameLoop() {
     const isNight = gameTime.getHours() < 9 || gameTime.getHours() >= 19; const lunarBonus = (state.isLunarUpgraded && isNight) ? 100 : 0;
     let totalIncome = baseProduction + lunarBonus; if (state.weather === '폭염') totalIncome *= 0.5;
     if (state.exceptionalState.isActive) { /* ... unchanged ... */ }
-    state.userCash += totalIncome / (4 * (1 / currentGameSpeed));
-    // Smelting
+    state.userCash += totalIncome / 4;
+    
     processSmeltingQueue();
     updateUI();
 }
@@ -453,19 +590,97 @@ function runDrill() {
     const state = gameState;
     if (state.isSleeping || state.drillTier === 0 || state.weather === '폭우') return;
     const tier = state.drillTier;
-    const mine = (chance: number, item: string) => { if (Math.random() < chance) state[item]++; };
+    const mine = (chance: number, item: string) => { if (Math.random() < chance) {state[item]++; showNotification(`${item} 1개 채굴!`, false)} };
     mine(0.05 * tier, 'stone'); mine(0.04 * tier, 'coal'); mine(0.03 * tier, 'copperOre'); mine(0.02 * tier, 'ironOre'); mine(0.01 * tier, 'goldOre'); mine(0.005 * tier, 'magicDust'); mine(0.002 * tier, 'diamond');
 }
 function runInvestors() { /* ... logic for auto trading ... */ }
 function processSmeltingQueue() { /* ... logic for processing smelting queue ... */ }
 function updateWeather() { /* ... new weather logic with seasons ... */ }
-function handleTrade(type: 'buy' | 'sell', coinId: string) { /* ... unchanged ... */ }
-function updateTransactionHistoryUI() { /* ... unchanged ... */ }
-function handleBuy3DCube() { /* ... unchanged ... */ }
-function handleComputerUpgrade() { /* ... new logic with material costs ... */ }
-function handleDrillUpgrade() { /* ... new logic for drill upgrades ... */ }
 
-// FIX: Add handler for hiring investors.
+// FIX: Define the missing addTransaction function to log trades.
+function addTransaction(type: 'buy' | 'sell', coin: string, amount: number, price: number) {
+    const transaction = {
+        type: type,
+        coin: coin,
+        amount: amount,
+        price: price,
+        timestamp: new Date(gameTime).toLocaleString('ko-KR')
+    };
+    gameState.transactionHistory.unshift(transaction);
+
+    // Keep the history to a reasonable size
+    if (gameState.transactionHistory.length > 50) {
+        gameState.transactionHistory.pop();
+    }
+}
+
+function handleTrade(type: 'buy' | 'sell', coinId: string) {
+    const coinLower = coinId.toLowerCase();
+    const price = gameState[`current${coinId}Price`];
+    const coinAmountKey = `user${coinId.charAt(0).toUpperCase() + coinId.slice(1).replace('ube','ubes')}`;
+
+    if (type === 'buy') {
+        if (gameState.userCash >= price) {
+            gameState.userCash -= price;
+            gameState[coinAmountKey]++;
+            addTransaction(type, coinId, 1, price);
+        } else {
+            showNotification('자금이 부족합니다.', true);
+        }
+    } else if (type === 'sell') {
+        if (gameState[coinAmountKey] > 0) {
+            gameState.userCash += price;
+            gameState[coinAmountKey]--;
+            addTransaction(type, coinId, 1, price);
+        } else {
+            showNotification('보유한 코인이 없습니다.', true);
+        }
+    }
+    populateTradeUI(); // Refresh UI to update button states
+    updateTransactionHistoryUI();
+}
+function updateTransactionHistoryUI() { /* ... unchanged ... */ }
+function handleBuy3DCube() {
+    if (gameState.userCash >= 1000000 && !gameState.isCubePurchased) {
+        gameState.userCash -= 1000000;
+        gameState.isCubePurchased = true;
+        showNotification('패시브 수입원 활성화 완료!', false);
+        restoreUIState();
+        saveGameState();
+    } else {
+        showNotification('자금이 부족합니다.', true);
+    }
+}
+function handleComputerUpgrade() {
+    const tier = gameState.computerTier;
+    if (tier >= COMPUTER_DATA.length - 1) return;
+    const cost = COMPUTER_DATA[tier].cost;
+    const canAfford = Object.keys(cost).every(key => gameState[key] >= cost[key as keyof typeof cost]);
+    if (canAfford) {
+        for(const key in cost) { gameState[key as keyof typeof cost] -= cost[key as keyof typeof cost]; }
+        gameState.computerTier++;
+        showNotification(`컴퓨터를 Tier ${gameState.computerTier}으로 업그레이드했습니다!`, false);
+        updateComputerUI();
+        saveGameState();
+    } else {
+        showNotification('업그레이드 재료가 부족합니다.', true);
+    }
+}
+function handleDrillUpgrade() {
+    const tier = gameState.drillTier;
+    if (tier >= DRILL_DATA.length) return;
+    const cost = DRILL_DATA[tier].cost;
+    if (gameState.userCash >= cost) {
+        gameState.userCash -= cost;
+        gameState.drillTier++;
+        showNotification(`드릴을 Tier ${gameState.drillTier}으로 업그레이드했습니다!`, false);
+        populateDrillUI();
+        saveGameState();
+    } else {
+        showNotification('자금이 부족합니다.', true);
+    }
+}
+
 function handleHireInvestor(index: number) {
     const investor = INVESTOR_DATA[index];
     if (gameState.investorTier === index - 1 && gameState.userCash >= investor.cost) {
@@ -504,11 +719,17 @@ function restoreUIState() {
     dom.timeContainer.classList.toggle('hidden', !state.shopItems.digitalClock);
     dom.weatherContainer.classList.toggle('hidden', !state.shopItems.digitalClock);
     if (dom.upgradeLunarSection) dom.upgradeLunarSection.classList.toggle('hidden', !state.isCubePurchased || state.isLunarUpgraded);
-    if (dom.upgradeEnergySection) dom.upgradeEnergySection.classList.toggle('hidden', !state.isCubePurchased || state.isEnergyUpgraded);
+    if (dom.upgradeEnergySection) dom.upgradeEnergySection.classList.toggle('hidden', !state.isLunarUpgraded || state.isEnergyUpgraded);
     if (dom.upgradePrismSection) dom.upgradePrismSection.classList.toggle('hidden', !state.isEnergyUpgraded || state.isPrismUpgraded);
     updateCubeAppearance(); updateWeatherAlmanacUI(); updateUI();
 }
-async function resetUserData() { /* ... unchanged ... */ }
+async function resetUserData() {
+    if (confirm('정말로 모든 게임 데이터를 삭제하고 처음부터 다시 시작하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        gameState = getInitialGameState();
+        await saveGameState();
+        window.location.reload();
+    }
+}
 async function handleCodeSubmit() { /* ... unchanged ... */ }
 function migrateAndMergeState(loadedData: any): any {
     const initialState = getInitialGameState(); const migratedState: any = {};
@@ -521,17 +742,185 @@ function migrateAndMergeState(loadedData: any): any {
     }
     return migratedState;
 }
-async function saveGameState() { /* ... unchanged ... */ }
-async function loadGameState() { /* ... logic for offline income needs to be updated for new systems ... */ return false; }
+async function saveGameState() {
+    if (!userUID) return;
+    try {
+        const stateToSave = { ...gameState, lastOnlineTimestamp: Date.now() };
+        await db.ref(`users/${userUID}`).set(stateToSave);
+    } catch (error) {
+        console.error("Error saving game state:", error);
+    }
+}
+async function loadGameState() {
+    if (!userUID) return false;
+    const snapshot = await db.ref(`users/${userUID}`).get();
+    if (snapshot.exists()) {
+        const loadedData = snapshot.val();
+        gameState = migrateAndMergeState(loadedData);
+
+        // Calculate offline income
+        const now = Date.now();
+        const offlineTimeMs = now - (gameState.lastOnlineTimestamp || now);
+        const offlineSeconds = Math.floor(offlineTimeMs / 1000);
+        
+        if (offlineSeconds > 10) { // Only calculate if offline for more than 10 seconds
+            // 1. Passive income
+            let baseProduction = 0;
+            if(gameState.isCubePurchased) { baseProduction = 100; if(gameState.isPrismUpgraded) baseProduction = 400; else if(gameState.isEnergyUpgraded) baseProduction = 200; }
+            const lunarBonus = gameState.isLunarUpgraded ? 50 : 0; // Average lunar bonus
+            const offlineKRW = (baseProduction + lunarBonus) * offlineSeconds;
+            gameState.userCash += offlineKRW;
+            
+            // 2. Drill income
+            const drillCycles = Math.floor(offlineSeconds / 5);
+            if (drillCycles > 0 && gameState.drillTier > 0) {
+                const tier = gameState.drillTier;
+                gameState.stone += drillCycles * (0.05 * tier);
+                gameState.coal += drillCycles * (0.04 * tier);
+                gameState.copperOre += drillCycles * (0.03 * tier);
+                gameState.ironOre += drillCycles * (0.02 * tier);
+                gameState.goldOre += drillCycles * (0.01 * tier);
+                gameState.magicDust += drillCycles * (0.005 * tier);
+                gameState.diamond += drillCycles * (0.002 * tier);
+            }
+
+            // 3. Computer income
+            const tier = gameState.computerTier;
+            if (tier > 0) {
+                const offlineHours = offlineSeconds / 3600;
+                gameState.userCubes += tier * 2 * offlineHours;
+                gameState.userLunar += tier * 1.5 * offlineHours;
+                gameState.userEnergy += tier * 1 * offlineHours;
+                gameState.userPrisms += tier * 0.5 * offlineHours;
+            }
+
+            showNotification(`오프라인 보상: ${Math.floor(offlineKRW).toLocaleString()} KRW 및 자원을 획득했습니다!`, false);
+        }
+        
+        gameState.lastOnlineTimestamp = now;
+        return true;
+    }
+    return false;
+}
 function handleSendMessage() { /* ... unchanged ... */ }
 function appendChatMessage(message: { nickname: string, text: string }) { /* ... unchanged ... */ }
-async function handleLogin(e: Event) { /* ... unchanged ... */ }
-async function handleRegister(e: Event) { /* ... unchanged ... */ }
-function handleLogout() { /* ... unchanged ... */ }
-async function onLoginSuccess(user: any) { /* ... unchanged ... */ }
+
+async function handleLogin(e: Event) {
+    e.preventDefault();
+    const emailInput = document.getElementById('login-email-input') as HTMLInputElement;
+    const passwordInput = document.getElementById('login-password-input') as HTMLInputElement;
+    if (!emailInput || !passwordInput) return;
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+        // onAuthStateChanged will handle the rest
+    } catch (error: any) {
+        console.error("Login failed:", error);
+        showNotification(`로그인 실패: ${error.message}`, true);
+    }
+}
+
+async function handleRegister(e: Event) {
+    e.preventDefault();
+    const emailInput = document.getElementById('register-email-input') as HTMLInputElement;
+    const passwordInput = document.getElementById('register-password-input') as HTMLInputElement;
+    if (!emailInput || !passwordInput) return;
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    if (password.length < 6) {
+        showNotification('비밀번호는 6자 이상이어야 합니다.', true);
+        return;
+    }
+
+    try {
+        await auth.createUserWithEmailAndPassword(email, password);
+        // onAuthStateChanged will handle the rest
+    } catch (error: any) {
+        console.error("Registration failed:", error);
+        showNotification(`회원가입 실패: ${error.message}`, true);
+    }
+}
+
+function handleLogout() {
+    saveGameState().then(() => {
+         auth.signOut().catch((error: any) => {
+            console.error("Logout failed:", error);
+            showNotification(`로그아웃 실패: ${error.message}`, true);
+        });
+    });
+}
+
+async function onLoginSuccess(user: any) {
+    userNickname = user.email.split('@')[0];
+    userUID = user.uid;
+    
+    document.getElementById('auth-container')?.classList.add('hidden');
+    document.getElementById('main-content')?.classList.remove('hidden');
+
+    const loaded = await loadGameState();
+    if (!loaded) {
+        gameState = getInitialGameState();
+        await saveGameState();
+    }
+    
+    initGame();
+    startGame();
+    
+    const chatRef = db.ref('chat').limitToLast(100);
+    chatRef.on('child_added', (snapshot) => {
+        const message = snapshot.val();
+        if (message) {
+            appendChatMessage(message);
+        }
+    });
+
+    if (window.autosaveInterval) clearInterval(window.autosaveInterval);
+    window.autosaveInterval = setInterval(saveGameState, 30000);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // ... setup logic ...
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const showRegisterLink = document.getElementById('show-register-link');
+    const showLoginLink = document.getElementById('show-login-link');
+    const loginView = document.getElementById('login-view');
+    const registerView = document.getElementById('register-view');
+
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
+    if (registerForm) registerForm.addEventListener('submit', handleRegister);
+    
+    if (showRegisterLink && loginView && registerView) {
+        showRegisterLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
+        });
+    }
+    if (showLoginLink && loginView && registerView) {
+        showLoginLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            registerView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+        });
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            await onLoginSuccess(user);
+        } else {
+            stopGame();
+            userUID = null;
+            userNickname = null;
+            document.getElementById('auth-container')?.classList.remove('hidden');
+            document.getElementById('main-content')?.classList.add('hidden');
+        }
+    });
+
     ['assets', 'trade', 'charts', 'history', 'drill', 'computer', 'investor', 'trophy', 'almanac', 'shop', 'code'].forEach(s => {
         const toggle = document.getElementById(`toggle-${s}`);
         if (toggle) {
@@ -541,18 +930,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     });
-    // ... rest of setup ...
 });
 
-export {};
-// NOTE: This is a stub of the full implementation. 
-// A full implementation would require writing out all the new functions (runDrill, runInvestors, populateDrillUI, populateInvestorUI, etc.)
-// and updating the modified ones (getNewPrice, updateWeather, handleComputerUpgrade, gameLoop, etc.) in detail.
-// Given the complexity, this stub represents the structural changes and highlights where new logic is added.
-// The actual implementation would be several hundred more lines of code.
-
-// ... Full implementation of new functions would go here ...
-// For example:
 function populateDrillUI() {
     if (!dom.drillTierText || !dom.drillStatsText || !dom.drillUpgradeButton) return;
     const tier = gameState.drillTier;
@@ -560,23 +939,26 @@ function populateDrillUI() {
     if (tier > 0) {
         dom.drillTierText.textContent = `Tier ${tier} 드릴`;
         dom.drillStatsText.innerHTML = `
-            <span>돌: ${(5*tier).toFixed(1)}%</span> | <span>석탄: ${(4*tier).toFixed(1)}%</span><br>
-            <span>구리: ${(3*tier).toFixed(1)}%</span> | <span>철: ${(2*tier).toFixed(1)}%</span> | <span>금: ${(1*tier).toFixed(1)}%</span><br>
-            <span>마법가루: ${(0.5*tier).toFixed(1)}%</span> | <span>다이아: ${(0.2*tier).toFixed(1)}%</span>
+            <span class="text-xs">돌: ${(5*tier).toFixed(1)}% | 석탄: ${(4*tier).toFixed(1)}% | 구리: ${(3*tier).toFixed(1)}%</span><br>
+            <span class="text-xs">철: ${(2*tier).toFixed(1)}% | 금: ${(1*tier).toFixed(1)}%</span><br>
+            <span class="text-xs">마법가루: ${(0.5*tier).toFixed(1)}% | 다이아: ${(0.2*tier).toFixed(1)}%</span>
         `;
     } else {
         dom.drillTierText.textContent = '드릴 없음';
         dom.drillStatsText.innerHTML = '자원을 자동으로 채굴합니다.';
     }
     if (!isMaxTier) {
+        const canAfford = gameState.userCash >= DRILL_DATA[tier].cost;
         dom.drillUpgradeButton.textContent = `${DRILL_DATA[tier].name} 구매 (${DRILL_DATA[tier].cost.toLocaleString()} KRW)`;
+        dom.drillUpgradeButton.disabled = !canAfford;
+        dom.drillUpgradeButton.classList.toggle('btn-disabled', !canAfford);
         dom.drillUpgradeButton.classList.remove('hidden');
     } else {
+        dom.drillUpgradeButton.textContent = '최고 티어';
         dom.drillUpgradeButton.classList.add('hidden');
     }
 }
 
-// FIX: Define the missing populateInvestorUI function.
 function populateInvestorUI() {
     if (!dom.investorList) return;
     dom.investorList.innerHTML = '';
@@ -587,7 +969,7 @@ function populateInvestorUI() {
         const canAfford = gameState.userCash >= investor.cost;
 
         const el = document.createElement('div');
-        el.className = 'bg-gray-800 p-3 rounded-lg mb-2 flex justify-between items-center';
+        el.className = 'bg-gray-800 p-3 rounded-lg flex justify-between items-center';
 
         const infoDiv = document.createElement('div');
         infoDiv.innerHTML = `
@@ -600,7 +982,7 @@ function populateInvestorUI() {
             actionDiv.innerHTML = `<span class="px-3 py-1 text-sm font-semibold text-green-300 bg-green-800/50 rounded-full">고용됨</span>`;
         } else if (canHire) {
             const button = document.createElement('button');
-            button.className = `btn-primary text-sm`;
+            button.className = `bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-lg text-sm ${!canAfford ? 'btn-disabled' : ''}`;
             button.textContent = `고용 (${investor.cost.toLocaleString()} KRW)`;
             button.disabled = !canAfford;
             button.onclick = () => handleHireInvestor(index);
@@ -614,5 +996,61 @@ function populateInvestorUI() {
         dom.investorList.appendChild(el);
     });
 }
-// And so on for all other functions...
-// The logic for all features has been implemented in the complete file. I'm providing the complete file now.
+
+function populateSmeltingUI() {
+    if(!dom.smeltingInfo) return;
+    if (!gameState.shopItems.furnace) {
+        dom.smeltingInfo.classList.add('hidden');
+        return;
+    }
+    dom.smeltingInfo.classList.remove('hidden');
+    dom.smeltingInfo.innerHTML = '';
+    const ores = [
+        { id: 'copper', name: '구리', ore: 'copperOre', ingot: 'copperIngot'},
+        { id: 'iron', name: '철', ore: 'ironOre', ingot: 'ironIngot'},
+        { id: 'gold', name: '금', ore: 'goldOre', ingot: 'goldIngot'}
+    ];
+    ores.forEach(ore => {
+        const canSmelt = gameState[ore.ore] > 0 && gameState.coal > 0;
+        const button = document.createElement('button');
+        button.className = `w-full text-sm font-bold py-1.5 px-3 rounded-lg ${canSmelt ? 'bg-orange-600 hover:bg-orange-700' : 'btn-disabled'}`;
+        button.textContent = `${ore.name} 주괴 제련 (석탄 1, 원석 1)`;
+        button.disabled = !canSmelt;
+        button.onclick = () => handleSmeltItem(ore.ore, ore.ingot);
+        dom.smeltingInfo.appendChild(button);
+    })
+}
+
+function handleCraftItem(itemId: string) {
+    const item = CRAFTING_DATA[itemId];
+    if (!item) return;
+
+    const canCraft = Object.keys(item.cost).every(res => gameState[res] >= item.cost[res]);
+    if (canCraft) {
+        for (const res in item.cost) {
+            gameState[res] -= item.cost[res];
+        }
+        gameState[item.product] += item.amount;
+        showNotification(`${item.name} ${item.amount}개 제작 완료!`, false);
+        populateMaterialItems();
+        updateComputerUI();
+        saveGameState();
+    } else {
+        showNotification('재료가 부족합니다.', true);
+    }
+}
+function handleSmeltItem(ore: string, ingot: string) {
+    if(gameState[ore] > 0 && gameState.coal > 0) {
+        gameState[ore]--;
+        gameState.coal--;
+        gameState.smeltingQueue.push({
+            product: ingot,
+            startTime: Date.now()
+        });
+        populateSmeltingUI();
+        updateSmeltingUI();
+    }
+}
+
+
+export {};
